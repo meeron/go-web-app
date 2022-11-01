@@ -36,7 +36,7 @@ func (g gormUsersRepository) Add(entity *User) error {
 
 func (g gormUsersRepository) Exists(email string) (bool, error) {
 	var count int64
-	err := g.db.Table("users").Where("email = ?", email).Count(&count).Error
+	err := g.db.Table("users").Where("email123 = ?", email).Count(&count).Error
 
 	return count > 0, err
 }

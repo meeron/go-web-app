@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"web-app/database"
+	"web-app/shared"
 )
 
 func Create(ctx *gin.Context) {
@@ -12,24 +13,15 @@ func Create(ctx *gin.Context) {
 		Password string
 	}
 
-	err := ctx.BindJSON(&body)
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(ctx.BindJSON(&body))
 
 	db, err := database.Connect()
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(err)
+
 	defer db.Close()
 
 	exists, err := db.Users.Exists(body.Email)
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(err)
 
 	if exists {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errorCode": "Exists"})
@@ -41,10 +33,7 @@ func Create(ctx *gin.Context) {
 		Password: body.Password,
 	}
 
-	if err = db.Users.Add(&newUser); err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(db.Users.Add(&newUser))
 
 	ctx.JSON(http.StatusCreated, gin.H{"Id": newUser.ID})
 }

@@ -2,24 +2,20 @@ package products
 
 import (
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"strconv"
 	"web-app/database"
+	"web-app/shared"
 )
 
 func GetAll(ctx *gin.Context) {
 	db, err := database.Connect()
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(err)
 
 	defer db.Close()
 
 	products, err := db.Products.Find()
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(err)
 
 	result := make([]Product, 0)
 
@@ -31,7 +27,7 @@ func GetAll(ctx *gin.Context) {
 		})
 	}
 
-	ctx.JSON(200, result)
+	ctx.JSON(http.StatusOK, result)
 }
 
 func Add(ctx *gin.Context) {
@@ -40,17 +36,10 @@ func Add(ctx *gin.Context) {
 		Price float32
 	}
 
-	err := ctx.BindJSON(&body)
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(ctx.BindJSON(&body))
 
 	db, err := database.Connect()
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(err)
 
 	defer db.Close()
 
@@ -58,11 +47,7 @@ func Add(ctx *gin.Context) {
 		Name:  body.Name,
 		Price: body.Price,
 	})
-
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(err)
 
 	newProduct := Product{
 		Id:    newEntity.ID,
@@ -70,36 +55,27 @@ func Add(ctx *gin.Context) {
 		Price: newEntity.Price,
 	}
 
-	ctx.JSON(201, newProduct)
+	ctx.JSON(http.StatusCreated, newProduct)
 }
 
 func Get(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
-	if err != nil {
-		ctx.Status(404)
-		return
-	}
+	shared.PanicOnErr(err)
 
 	db, err := database.Connect()
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(err)
 
 	defer db.Close()
 
 	product, err := db.Products.GetById(id)
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(err)
 
 	if product == nil {
-		ctx.JSON(422, gin.H{"errorCode": "NotFound"})
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errorCode": "NotFound"})
 		return
 	}
 
-	ctx.JSON(200, Product{
+	ctx.JSON(http.StatusOK, Product{
 		Id:    product.ID,
 		Name:  product.Name,
 		Price: product.Price,
@@ -108,24 +84,20 @@ func Get(ctx *gin.Context) {
 
 func Delete(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
-	if err != nil {
-		ctx.Status(404)
-		return
-	}
+	shared.PanicOnErr(err)
 
 	db, err := database.Connect()
-	if err != nil {
-		ctx.JSON(500, err.Error())
-		return
-	}
+	shared.PanicOnErr(err)
 
 	defer db.Close()
 
 	exists, err := db.Products.Remove(id)
+	shared.PanicOnErr(err)
+
 	if !exists {
 		ctx.JSON(422, gin.H{"errorCode": "NotFound"})
 		return
 	}
 
-	ctx.Status(200)
+	ctx.Status(http.StatusOK)
 }
