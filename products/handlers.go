@@ -12,7 +12,7 @@ func GetAll(ctx *gin.Context) {
 	db := database.Connect()
 	defer db.Close()
 
-	products := db.Products.Find()
+	products := db.Products().Find()
 
 	result := make([]Product, 0)
 
@@ -43,7 +43,7 @@ func Add(ctx *gin.Context) {
 		Price: body.Price,
 	}
 
-	db.Products.Add(&newEntity)
+	db.Products().Add(&newEntity)
 
 	newProduct := Product{
 		Id:    newEntity.ID,
@@ -61,7 +61,7 @@ func Get(ctx *gin.Context) {
 	db := database.Connect()
 	defer db.Close()
 
-	product := db.Products.GetById(id)
+	product := db.Products().GetById(id)
 	if product == nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errorCode": "NotFound"})
 		return
@@ -80,7 +80,7 @@ func Delete(ctx *gin.Context) {
 	db := database.Connect()
 	defer db.Close()
 
-	result := db.Products.Remove(id)
+	result := db.Products().Remove(id)
 	if !result {
 		ctx.JSON(422, gin.H{"errorCode": "NotFound"})
 		return

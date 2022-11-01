@@ -18,7 +18,7 @@ func Create(ctx *gin.Context) {
 	db := database.Connect()
 	defer db.Close()
 
-	if exists := db.Users.Exists(body.Email); exists {
+	if exists := db.Users().Exists(body.Email); exists {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errorCode": "Exists"})
 		return
 	}
@@ -28,7 +28,7 @@ func Create(ctx *gin.Context) {
 		Password: body.Password,
 	}
 
-	db.Users.Add(&newUser)
+	db.Users().Add(&newUser)
 
 	ctx.JSON(http.StatusCreated, gin.H{"Id": newUser.ID})
 }

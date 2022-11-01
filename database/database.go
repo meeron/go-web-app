@@ -10,20 +10,38 @@ const connectionString = "host=localhost user=go_web_app password=go_web_app dbn
 
 type DbContext struct {
 	db       *gorm.DB
-	Products IProductsRepository
-	Users    IUsersRepository
+	products IProductsRepository
+	users    IUsersRepository
 }
 
 func (ctx DbContext) Close() {
+}
+
+func (ctx DbContext) Products() IProductsRepository {
+	if ctx.products != nil {
+		return ctx.products
+	}
+
+	ctx.products = &gormProductsRepository{db: ctx.db}
+
+	return ctx.products
+}
+
+func (ctx DbContext) Users() IUsersRepository {
+	if ctx.users != nil {
+		return ctx.users
+	}
+
+	ctx.users = &gormUsersRepository{db: ctx.db}
+
+	return ctx.users
 }
 
 func Connect() *DbContext {
 	db := shared.Unwrap(gorm.Open(postgres.Open(connectionString), &gorm.Config{}))
 
 	return &DbContext{
-		db:       db,
-		Products: &gormProductsRepository{db: db},
-		Users:    &gormUsersRepository{db: db},
+		db: db,
 	}
 }
 
