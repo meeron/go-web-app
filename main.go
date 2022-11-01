@@ -6,6 +6,8 @@ import (
 )
 
 func main() {
+	parseArguments()
+
 	app := gin.Default()
 
 	app.GET("/", func(ctx *gin.Context) {

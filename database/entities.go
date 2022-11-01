@@ -1,6 +1,9 @@
 package database
 
+import "gorm.io/gorm"
+
 type Product struct {
-	Id   int
-	Name string
+	gorm.Model
+	Name  string
+	Price float32
 }

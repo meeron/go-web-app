@@ -1,10 +1,9 @@
 package database
 
 import (
-	"math/rand"
+	"errors"
+	"gorm.io/gorm"
 )
-
-var products = make(map[int]Product, 0)
 
 type IProductsRepository interface {
 	Find() ([]Product, error)
@@ -13,43 +12,47 @@ type IProductsRepository interface {
 	Remove(id int) (bool, error)
 }
 
-type memoryProductsRepository struct {
+type gormProductsRepository struct {
+	db *gorm.DB
 }
 
-func (repo memoryProductsRepository) Add(new Product) (Product, error) {
-	new.Id = rand.Intn(999999)
+func (repo gormProductsRepository) Add(new Product) (Product, error) {
+	err := repo.db.Create(&new).Error
 
-	products[new.Id] = new
-
-	return new, nil
+	return new, err
 }
 
-func (repo memoryProductsRepository) GetById(id int) (*Product, error) {
-	product, exists := products[id]
-	if !exists {
+func (repo gormProductsRepository) GetById(id int) (*Product, error) {
+	var product Product
+
+	err := repo.db.First(&product, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
 
-	return &product, nil
+	return &product, err
 }
 
-func (repo memoryProductsRepository) Find() ([]Product, error) {
-	result := make([]Product, 0)
+func (repo gormProductsRepository) Find() ([]Product, error) {
+	products := make([]Product, 0)
 
-	for _, product := range products {
-		result = append(result, product)
-	}
+	err := repo.db.Find(&products).Error
 
-	return result, nil
+	return products, err
 }
 
-func (repo memoryProductsRepository) Remove(id int) (bool, error) {
-	_, exists := products[id]
-	if !exists {
+func (repo gormProductsRepository) Remove(id int) (bool, error) {
+	var product Product
+
+	result := repo.db.Delete(&product, id)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return false, nil
 	}
 
-	delete(products, id)
+	if result.RowsAffected == 0 {
+		return false, nil
+	}
 
-	return true, nil
+	return true, result.Error
 }
