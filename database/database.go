@@ -10,6 +10,7 @@ const connectionString = "host=localhost user=go_web_app password=go_web_app dbn
 type DbContext struct {
 	db       *gorm.DB
 	Products IProductsRepository
+	Users    IUsersRepository
 }
 
 func (ctx DbContext) Close() {
@@ -24,6 +25,7 @@ func Connect() (*DbContext, error) {
 	return &DbContext{
 		db:       db,
 		Products: &gormProductsRepository{db: db},
+		Users:    &gormUsersRepository{db: db},
 	}, nil
 }
 
