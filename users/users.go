@@ -10,6 +10,6 @@ func CreateRoutes(app *gin.Engine, middleware ...gin.HandlerFunc) {
 
 	usersGroup := app.Group("/users", middleware...)
 	{
-		usersGroup.POST("create", endpoints.Create)
+		usersGroup.POST("", endpoints.Create)
 	}
 }
