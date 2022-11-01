@@ -7,3 +7,9 @@ type Product struct {
 	Name  string
 	Price float32
 }
+
+type User struct {
+	gorm.Model
+	Email    string
+	Password string
+}

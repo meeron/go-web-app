@@ -34,6 +34,14 @@ func MigrateDb() error {
 	}
 
 	err = db.AutoMigrate(&Product{})
+	if err != nil {
+		return err
+	}
+
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		return err
+	}
 
 	return err
 }

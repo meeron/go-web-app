@@ -3,10 +3,13 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"web-app/products"
+	"web-app/users"
 )
 
 func main() {
-	parseArguments()
+	if parseArguments() {
+		return
+	}
 
 	app := gin.Default()
 
@@ -19,6 +22,7 @@ func main() {
 	app.Use()
 
 	products.CreateRoutes(app, Auth())
+	users.CreateRoutes(app, Auth())
 
 	app.Run()
 }

@@ -6,16 +6,18 @@ import (
 	"web-app/database"
 )
 
-func parseArguments() {
+func parseArguments() bool {
 	argLength := len(os.Args[1:])
 	if argLength >= 1 {
 		if os.Args[1] == "migrate" {
 			migrateDatabase()
-			return
+			return true
 		}
 
 		panic(fmt.Sprintf("Unsupported argument: %v", os.Args[1]))
 	}
+
+	return false
 }
 
 func migrateDatabase() {
