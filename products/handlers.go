@@ -2,32 +2,56 @@ package products
 
 import (
 	"github.com/gin-gonic/gin"
-	"math/rand"
 	"strconv"
+	"web-app/database"
 )
 
 func GetAll(ctx *gin.Context) {
-	result := make([]Product, 0)
-
-	//for _, product := range products {
-	//	result = append(result, product)
-	//}
-
-	ctx.JSON(200, result)
-}
-
-func Add(ctx *gin.Context) {
-	var newProduct Product
-
-	err := ctx.BindJSON(&newProduct)
+	db, err := database.Connect()
 	if err != nil {
 		ctx.JSON(500, err)
 		return
 	}
 
-	newProduct.Id = rand.Intn(9999)
+	products, err := db.Products.Find()
+	if err != nil {
+		ctx.JSON(500, err)
+		return
+	}
 
-	//products[newProduct.Id] = newProduct
+	ctx.JSON(200, products)
+}
+
+func Add(ctx *gin.Context) {
+	var body struct {
+		Name string
+	}
+
+	err := ctx.BindJSON(&body)
+	if err != nil {
+		ctx.JSON(500, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		ctx.JSON(500, err)
+		return
+	}
+
+	newEntity, err := db.Products.Add(database.Product{
+		Name: body.Name,
+	})
+
+	if err != nil {
+		ctx.JSON(500, err)
+		return
+	}
+
+	newProduct := Product{
+		Id:   newEntity.Id,
+		Name: newEntity.Name,
+	}
 
 	ctx.JSON(201, newProduct)
 }
@@ -39,14 +63,27 @@ func Get(ctx *gin.Context) {
 		return
 	}
 
-	//product, exists := products[id]
-	//if !exists {
-	//	ctx.JSON(422, gin.H{"errorCode": "NotFound"})
-	//	return
-	//}
+	db, err := database.Connect()
+	if err != nil {
+		ctx.JSON(500, err)
+		return
+	}
 
-	//ctx.JSON(200, product)
-	ctx.JSON(200, id)
+	product, err := db.Products.GetById(id)
+	if err != nil {
+		ctx.JSON(500, err)
+		return
+	}
+
+	if product == nil {
+		ctx.JSON(422, gin.H{"errorCode": "NotFound"})
+		return
+	}
+
+	ctx.JSON(200, Product{
+		Id:   product.Id,
+		Name: product.Name,
+	})
 }
 
 func Delete(ctx *gin.Context) {
@@ -56,15 +93,17 @@ func Delete(ctx *gin.Context) {
 		return
 	}
 
-	/*
-		_, exists := products[id]
-		if !exists {
-			ctx.JSON(422, gin.H{"errorCode": "NotFound"})
-			return
-		}
+	db, err := database.Connect()
+	if err != nil {
+		ctx.JSON(500, err)
+		return
+	}
 
-		delete(products, id)
-	*/
+	exists, err := db.Products.Remove(id)
+	if !exists {
+		ctx.JSON(422, gin.H{"errorCode": "NotFound"})
+		return
+	}
 
-	ctx.JSON(200, id)
+	ctx.Status(200)
 }
