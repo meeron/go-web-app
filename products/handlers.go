@@ -9,13 +9,10 @@ import (
 )
 
 func GetAll(ctx *gin.Context) {
-	db, err := database.Connect()
-	shared.PanicOnErr(err)
-
+	db := database.Connect()
 	defer db.Close()
 
-	products, err := db.Products.Find()
-	shared.PanicOnErr(err)
+	products := db.Products.Find()
 
 	result := make([]Product, 0)
 
@@ -38,16 +35,15 @@ func Add(ctx *gin.Context) {
 
 	shared.PanicOnErr(ctx.BindJSON(&body))
 
-	db, err := database.Connect()
-	shared.PanicOnErr(err)
-
+	db := database.Connect()
 	defer db.Close()
 
-	newEntity, err := db.Products.Add(database.Product{
+	newEntity := database.Product{
 		Name:  body.Name,
 		Price: body.Price,
-	})
-	shared.PanicOnErr(err)
+	}
+
+	db.Products.Add(&newEntity)
 
 	newProduct := Product{
 		Id:    newEntity.ID,
@@ -62,14 +58,10 @@ func Get(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	shared.PanicOnErr(err)
 
-	db, err := database.Connect()
-	shared.PanicOnErr(err)
-
+	db := database.Connect()
 	defer db.Close()
 
-	product, err := db.Products.GetById(id)
-	shared.PanicOnErr(err)
-
+	product := db.Products.GetById(id)
 	if product == nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errorCode": "NotFound"})
 		return
@@ -83,18 +75,13 @@ func Get(ctx *gin.Context) {
 }
 
 func Delete(ctx *gin.Context) {
-	id, err := strconv.Atoi(ctx.Param("id"))
-	shared.PanicOnErr(err)
+	id := shared.Unwrap(strconv.Atoi(ctx.Param("id")))
 
-	db, err := database.Connect()
-	shared.PanicOnErr(err)
-
+	db := database.Connect()
 	defer db.Close()
 
-	exists, err := db.Products.Remove(id)
-	shared.PanicOnErr(err)
-
-	if !exists {
+	result := db.Products.Remove(id)
+	if !result {
 		ctx.JSON(422, gin.H{"errorCode": "NotFound"})
 		return
 	}

@@ -3,40 +3,41 @@ package database
 import (
 	"errors"
 	"gorm.io/gorm"
+	"web-app/shared"
 )
 
 type IUsersRepository interface {
-	GetByEmail(email string) (*User, error)
-	Add(entity *User) error
-	Exists(email string) (bool, error)
+	GetByEmail(email string) *User
+	Add(entity *User)
+	Exists(email string) bool
 }
 
 type gormUsersRepository struct {
 	db *gorm.DB
 }
 
-func (g gormUsersRepository) GetByEmail(email string) (*User, error) {
+func (g gormUsersRepository) GetByEmail(email string) *User {
 	var user User
 
 	err := g.db.First(&user, "email = ?", email).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
+		return nil
 	}
 
-	if err != nil {
-		return nil, err
-	}
+	shared.PanicOnErr(err)
 
-	return &user, nil
+	return &user
 }
 
-func (g gormUsersRepository) Add(entity *User) error {
-	return g.db.Create(entity).Error
+func (g gormUsersRepository) Add(entity *User) {
+	shared.PanicOnErr(g.db.Create(entity).Error)
 }
 
-func (g gormUsersRepository) Exists(email string) (bool, error) {
+func (g gormUsersRepository) Exists(email string) bool {
 	var count int64
-	err := g.db.Table("users").Where("email123 = ?", email).Count(&count).Error
+	err := g.db.Table("users").Where("email = ?", email).Count(&count).Error
 
-	return count > 0, err
+	shared.PanicOnErr(err)
+
+	return count > 0
 }

@@ -3,56 +3,54 @@ package database
 import (
 	"errors"
 	"gorm.io/gorm"
+	"web-app/shared"
 )
 
 type IProductsRepository interface {
-	Find() ([]Product, error)
-	Add(new Product) (Product, error)
-	GetById(id int) (*Product, error)
-	Remove(id int) (bool, error)
+	Find() []Product
+	Add(new *Product)
+	GetById(id int) *Product
+	Remove(id int) bool
 }
 
 type gormProductsRepository struct {
 	db *gorm.DB
 }
 
-func (repo gormProductsRepository) Add(new Product) (Product, error) {
-	err := repo.db.Create(&new).Error
-
-	return new, err
+func (repo gormProductsRepository) Add(new *Product) {
+	shared.PanicOnErr(repo.db.Create(new).Error)
 }
 
-func (repo gormProductsRepository) GetById(id int) (*Product, error) {
+func (repo gormProductsRepository) GetById(id int) *Product {
 	var product Product
 
 	err := repo.db.First(&product, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
+		return nil
 	}
 
-	return &product, err
+	shared.PanicOnErr(err)
+
+	return &product
 }
 
-func (repo gormProductsRepository) Find() ([]Product, error) {
+func (repo gormProductsRepository) Find() []Product {
 	products := make([]Product, 0)
 
-	err := repo.db.Find(&products).Error
+	shared.PanicOnErr(repo.db.Find(&products).Error)
 
-	return products, err
+	return products
 }
 
-func (repo gormProductsRepository) Remove(id int) (bool, error) {
+func (repo gormProductsRepository) Remove(id int) bool {
 	var product Product
 
 	result := repo.db.Delete(&product, id)
-
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return false, nil
-	}
+	shared.PanicOnErr(result.Error)
 
 	if result.RowsAffected == 0 {
-		return false, nil
+		return false
 	}
 
-	return true, result.Error
+	return true
 }

@@ -15,15 +15,10 @@ func Create(ctx *gin.Context) {
 
 	shared.PanicOnErr(ctx.BindJSON(&body))
 
-	db, err := database.Connect()
-	shared.PanicOnErr(err)
-
+	db := database.Connect()
 	defer db.Close()
 
-	exists, err := db.Users.Exists(body.Email)
-	shared.PanicOnErr(err)
-
-	if exists {
+	if exists := db.Users.Exists(body.Email); exists {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errorCode": "Exists"})
 		return
 	}
@@ -33,7 +28,7 @@ func Create(ctx *gin.Context) {
 		Password: body.Password,
 	}
 
-	shared.PanicOnErr(db.Users.Add(&newUser))
+	db.Users.Add(&newUser)
 
 	ctx.JSON(http.StatusCreated, gin.H{"Id": newUser.ID})
 }

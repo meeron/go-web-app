@@ -7,3 +7,8 @@ func PanicOnErr(err error) {
 
 	panic(err)
 }
+
+func Unwrap[T any](result T, err error) T {
+	PanicOnErr(err)
+	return result
+}

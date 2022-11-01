@@ -3,6 +3,7 @@ package database
 import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"web-app/shared"
 )
 
 const connectionString = "host=localhost user=go_web_app password=go_web_app dbname=go_web_app"
@@ -16,17 +17,14 @@ type DbContext struct {
 func (ctx DbContext) Close() {
 }
 
-func Connect() (*DbContext, error) {
-	db, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
-	if err != nil {
-		return nil, err
-	}
+func Connect() *DbContext {
+	db := shared.Unwrap(gorm.Open(postgres.Open(connectionString), &gorm.Config{}))
 
 	return &DbContext{
 		db:       db,
 		Products: &gormProductsRepository{db: db},
 		Users:    &gormUsersRepository{db: db},
-	}, nil
+	}
 }
 
 func MigrateDb() error {
