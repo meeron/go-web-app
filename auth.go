@@ -3,25 +3,33 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strings"
+	"web-app/shared"
 )
-
-const fakeUser = "admin"
-const fakePass = "admin"
 
 func Auth() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		defer handlePanic(ctx)
+		//defer handlePanic(ctx)
 
-		user, pass, hasAuth := ctx.Request.BasicAuth()
+		parts := strings.Split(ctx.GetHeader("Authorization"), " ")
 
-		if !hasAuth {
-			ctx.Status(401)
+		if len(parts) != 2 {
+			ctx.Status(http.StatusUnauthorized)
 			ctx.Abort()
 			return
 		}
 
-		if user != fakeUser || pass != fakePass {
-			ctx.Status(401)
+		schema := parts[0]
+		token := parts[1]
+
+		if schema != "Bearer" {
+			ctx.Status(http.StatusUnauthorized)
+			ctx.Abort()
+			return
+		}
+
+		if !shared.ValidateToken(token) {
+			ctx.Status(http.StatusUnauthorized)
 			ctx.Abort()
 			return
 		}

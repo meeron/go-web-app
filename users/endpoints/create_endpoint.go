@@ -1,6 +1,8 @@
 package endpoints
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"web-app/database"
@@ -23,9 +25,13 @@ func Create(ctx *gin.Context) {
 		return
 	}
 
+	hash := sha256.New()
+	_, err := hash.Write([]byte(body.Password))
+	shared.PanicOnErr(err)
+
 	newUser := database.User{
 		Email:    body.Email,
-		Password: body.Password,
+		Password: fmt.Sprintf("%x", hash.Sum(nil)),
 	}
 
 	db.Users().Add(&newUser)
