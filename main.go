@@ -16,7 +16,9 @@ func main() {
 		})
 	})
 
-	products.Routes(app)
+	app.Use()
+
+	products.CreateRoutes(app, Auth())
 
 	app.Run()
 }
