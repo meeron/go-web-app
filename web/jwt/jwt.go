@@ -1,14 +1,15 @@
-package shared
+package jwt
 
 import (
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	"time"
+	"web-app/shared"
 )
 
 var signingKey = []byte("THIS_IS_SECRET")
 
-func CreateJwtToken(customClaims map[string]string) string {
+func Create(customClaims map[string]string) string {
 	token := jwt.New(jwt.SigningMethodHS512)
 
 	claims := token.Claims.(jwt.MapClaims)
@@ -19,10 +20,10 @@ func CreateJwtToken(customClaims map[string]string) string {
 		claims[key] = value
 	}
 
-	return Unwrap(token.SignedString(signingKey))
+	return shared.Unwrap(token.SignedString(signingKey))
 }
 
-func ValidateToken(tokenString string) bool {
+func Validate(tokenString string) bool {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Validate signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

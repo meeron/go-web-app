@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"web-app/database"
-	"web-app/products"
-	"web-app/users"
+	"web-app/features"
+	"web-app/web"
 )
 
 func main() {
@@ -14,18 +14,10 @@ func main() {
 
 	database.Open()
 
-	app := gin.Default()
+	app := gin.New()
+	app.Use(gin.Logger(), web.CustomRecovery())
 
-	app.GET("/", func(ctx *gin.Context) {
-		ctx.JSON(200, gin.H{
-			"version": "1.0.0",
-		})
-	})
-
-	app.Use()
-
-	products.CreateRoutes(app, Auth())
-	users.CreateRoutes(app, Auth())
+	features.ConfigureRoutes(app)
 
 	app.Run()
 }

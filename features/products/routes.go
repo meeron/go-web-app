@@ -6,17 +6,18 @@ import (
 	"strconv"
 	"web-app/database"
 	"web-app/shared"
+	"web-app/web"
 )
 
-func GetAll(ctx *gin.Context) {
+func getAll(ctx *gin.Context) {
 	db := database.DbCtx()
 
 	products := db.Products().Find()
 
-	result := make([]Product, 0)
+	result := make([]ProductVm, 0)
 
 	for _, p := range products {
-		result = append(result, Product{
+		result = append(result, ProductVm{
 			Id:    p.ID,
 			Name:  p.Name,
 			Price: p.Price,
@@ -26,7 +27,7 @@ func GetAll(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func Add(ctx *gin.Context) {
+func add(ctx *gin.Context) {
 	var body struct {
 		Name  string
 		Price float32
@@ -43,16 +44,14 @@ func Add(ctx *gin.Context) {
 
 	db.Products().Add(&newEntity)
 
-	newProduct := Product{
+	ctx.JSON(http.StatusCreated, ProductVm{
 		Id:    newEntity.ID,
 		Name:  newEntity.Name,
 		Price: newEntity.Price,
-	}
-
-	ctx.JSON(http.StatusCreated, newProduct)
+	})
 }
 
-func Get(ctx *gin.Context) {
+func get(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	shared.PanicOnErr(err)
 
@@ -64,14 +63,14 @@ func Get(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, Product{
+	ctx.JSON(http.StatusOK, ProductVm{
 		Id:    product.ID,
 		Name:  product.Name,
 		Price: product.Price,
 	})
 }
 
-func Delete(ctx *gin.Context) {
+func delete(ctx *gin.Context) {
 	id := shared.Unwrap(strconv.Atoi(ctx.Param("id")))
 
 	db := database.DbCtx()
@@ -83,4 +82,14 @@ func Delete(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusOK)
+}
+
+func ConfigureRoutes(app *gin.Engine) {
+	g := app.Group("/products", web.Auth())
+	{
+		g.GET("", getAll)
+		g.POST("", add)
+		g.GET(":id", get)
+		g.DELETE(":id", delete)
+	}
 }

@@ -1,15 +1,14 @@
-package main
+package web
 
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
-	"web-app/shared"
+	"web-app/web/jwt"
 )
 
 func Auth() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		//defer handlePanic(ctx)
 
 		parts := strings.Split(ctx.GetHeader("Authorization"), " ")
 
@@ -28,22 +27,12 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		if !shared.ValidateToken(token) {
+		if !jwt.Validate(token) {
 			ctx.Status(http.StatusUnauthorized)
 			ctx.Abort()
 			return
 		}
 
 		ctx.Next()
-	}
-}
-
-func handlePanic(ctx *gin.Context) {
-	if err := recover(); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"errorCode": "Generic",
-			"message":   err.(error).Error(),
-		})
-		ctx.Abort()
 	}
 }
