@@ -17,8 +17,7 @@ func Create(ctx *gin.Context) {
 
 	shared.PanicOnErr(ctx.BindJSON(&body))
 
-	db := database.Connect()
-	defer db.Close()
+	db := database.DbCtx()
 
 	if exists := db.Users().Exists(body.Email); exists {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errorCode": "Exists"})

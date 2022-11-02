@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"web-app/shared"
@@ -8,13 +9,12 @@ import (
 
 const connectionString = "host=localhost user=go_web_app password=go_web_app dbname=go_web_app"
 
+var dbCtx *DbContext
+
 type DbContext struct {
 	db       *gorm.DB
 	products IProductsRepository
 	users    IUsersRepository
-}
-
-func (ctx DbContext) Close() {
 }
 
 func (ctx DbContext) Products() IProductsRepository {
@@ -37,12 +37,23 @@ func (ctx DbContext) Users() IUsersRepository {
 	return ctx.users
 }
 
-func Connect() *DbContext {
-	db := shared.Unwrap(gorm.Open(postgres.Open(connectionString), &gorm.Config{}))
+func Open() {
+	if dbCtx != nil {
+		panic(fmt.Errorf("dbContext already created"))
+	}
 
-	return &DbContext{
+	db := shared.Unwrap(gorm.Open(postgres.Open(connectionString), &gorm.Config{}))
+	dbCtx = &DbContext{
 		db: db,
 	}
+}
+
+func DbCtx() *DbContext {
+	if dbCtx == nil {
+		panic(fmt.Errorf("dbContext not created"))
+	}
+
+	return dbCtx
 }
 
 func MigrateDb() error {
@@ -50,6 +61,16 @@ func MigrateDb() error {
 	if err != nil {
 		return err
 	}
+
+	// Close connection after migration is done
+	defer func() {
+		sqlDb, err := db.DB()
+		if err != nil {
+			return
+		}
+
+		sqlDb.Close()
+	}()
 
 	err = db.AutoMigrate(&Product{})
 	if err != nil {

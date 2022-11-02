@@ -17,8 +17,7 @@ func Login(ctx *gin.Context) {
 
 	shared.PanicOnErr(ctx.BindJSON(&body))
 
-	db := database.Connect()
-	defer db.Close()
+	db := database.DbCtx()
 
 	user := db.Users().GetByEmail(body.Email)
 	if user == nil {

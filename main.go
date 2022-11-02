@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"web-app/database"
 	"web-app/products"
 	"web-app/users"
 )
@@ -10,6 +11,8 @@ func main() {
 	if parseArguments() {
 		return
 	}
+
+	database.Open()
 
 	app := gin.Default()
 

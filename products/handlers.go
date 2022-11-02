@@ -9,8 +9,7 @@ import (
 )
 
 func GetAll(ctx *gin.Context) {
-	db := database.Connect()
-	defer db.Close()
+	db := database.DbCtx()
 
 	products := db.Products().Find()
 
@@ -35,8 +34,7 @@ func Add(ctx *gin.Context) {
 
 	shared.PanicOnErr(ctx.BindJSON(&body))
 
-	db := database.Connect()
-	defer db.Close()
+	db := database.DbCtx()
 
 	newEntity := database.Product{
 		Name:  body.Name,
@@ -58,8 +56,7 @@ func Get(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	shared.PanicOnErr(err)
 
-	db := database.Connect()
-	defer db.Close()
+	db := database.DbCtx()
 
 	product := db.Products().GetById(id)
 	if product == nil {
@@ -77,8 +74,7 @@ func Get(ctx *gin.Context) {
 func Delete(ctx *gin.Context) {
 	id := shared.Unwrap(strconv.Atoi(ctx.Param("id")))
 
-	db := database.Connect()
-	defer db.Close()
+	db := database.DbCtx()
 
 	result := db.Products().Remove(id)
 	if !result {
