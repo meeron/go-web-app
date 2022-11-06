@@ -7,8 +7,6 @@ import (
 	"web-app/shared"
 )
 
-const connectionString = "host=localhost user=go_web_app password=go_web_app dbname=go_web_app"
-
 var dbCtx *DbContext
 
 type DbContext struct {
@@ -37,7 +35,7 @@ func (ctx DbContext) Users() IUsersRepository {
 	return ctx.users
 }
 
-func Open() {
+func Open(connectionString string) {
 	if dbCtx != nil {
 		panic(fmt.Errorf("dbContext already created"))
 	}
@@ -56,7 +54,7 @@ func DbCtx() *DbContext {
 	return dbCtx
 }
 
-func MigrateDb() error {
+func MigrateDb(connectionString string) error {
 	db, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
 	if err != nil {
 		return err

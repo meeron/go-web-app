@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"web-app/database"
+	"web-app/shared/config"
 )
 
 func parseArguments() bool {
@@ -23,7 +24,7 @@ func parseArguments() bool {
 func migrateDatabase() {
 	fmt.Println("Migrating database...")
 
-	err := database.MigrateDb()
+	err := database.MigrateDb(config.GetDbConnectionString())
 	if err != nil {
 		panic(err)
 	}
