@@ -6,6 +6,11 @@ import (
 	"os"
 )
 
+const (
+	EnvLocal = "local"
+	EnvProd  = "prod"
+)
+
 func Init() {
 	env := os.Getenv("GO_APP_ENV")
 	if env == "" {
@@ -21,10 +26,22 @@ func Init() {
 	}
 }
 
+func IsEnv(env string) bool {
+	return os.Getenv("GO_APP_ENV") == env
+}
+
 func GetAppPort() int {
 	return viper.GetInt("app.port")
 }
 
 func GetDbConnectionString() string {
 	return viper.GetString("database.connectionString")
+}
+
+func GetGinMode() string {
+	return viper.GetString("app.ginMode")
+}
+
+func GetAppLogger() map[string]interface{} {
+	return viper.GetStringMap("app.logger")
 }

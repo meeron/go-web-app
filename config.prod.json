@@ -1,6 +1,10 @@
 {
   "app": {
-    "port": 8080
+    "port": 8080,
+    "ginMode": "release",
+    "logger": {
+      "file": {}
+    }
   },
   "database": {
     "connectionString": ""

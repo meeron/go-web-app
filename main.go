@@ -6,22 +6,40 @@ import (
 	"web-app/database"
 	"web-app/features"
 	"web-app/shared/config"
+	"web-app/shared/logger"
 	"web-app/web"
 )
 
 func main() {
 	config.Init()
+	loggerWriter := logger.Init()
+
+	appLogger := logger.Create("App")
 
 	if parseArguments() {
 		return
 	}
 
+	appLogger.Info("Connecting to database...")
 	database.Open(config.GetDbConnectionString())
+	appLogger.Info("Connected")
+
+	if config.IsEnv(config.EnvProd) {
+		gin.DisableConsoleColor()
+	}
+
+	gin.DefaultWriter = loggerWriter
+
+	gin.SetMode(config.GetGinMode())
 
 	app := gin.New()
 	app.Use(gin.Logger(), web.CustomRecovery())
 
 	features.ConfigureRoutes(app)
 
-	app.Run(fmt.Sprintf(":%d", config.GetAppPort()))
+	address := fmt.Sprintf(":%d", config.GetAppPort())
+
+	appLogger.Info("Listening on %v...", address)
+
+	app.Run(address)
 }
