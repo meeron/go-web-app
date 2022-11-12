@@ -48,9 +48,5 @@ func (repo gormProductsRepository) Remove(id int) bool {
 	result := repo.db.Delete(&product, id)
 	shared.PanicOnErr(result.Error)
 
-	if result.RowsAffected == 0 {
-		return false
-	}
-
-	return true
+	return result.RowsAffected > 0
 }
