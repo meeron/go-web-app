@@ -5,17 +5,21 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"time"
 	"web-app/shared"
 	"web-app/shared/config"
 )
 
 const (
-	logDir        = "./logs"
-	logFile       = "logs/app.log"
-	loggerConsole = "console"
-	loggerFile    = "file"
+	defaultFilePath = "logs/app.log"
+	loggerConsole   = "console"
+	loggerFile      = "file"
 )
+
+type fileWriteConfig struct {
+	Path string
+}
 
 var writer io.Writer
 
@@ -41,7 +45,7 @@ func Init() io.Writer {
 		}
 
 		if key == loggerFile {
-			writers = append(writers, configureFile(val))
+			writers = append(writers, configureFile(parseFileConfig(val)))
 		}
 	}
 
@@ -65,36 +69,12 @@ func configureConsole(params interface{}) io.Writer {
 	return os.Stdout
 }
 
-func configureFile(params interface{}) io.Writer {
-	fileConfig, ok := params.(map[string]interface{})
-
-	if !ok {
-		return configureFileWriter()
-	}
-
-	filePathValue, exists := fileConfig["path"]
-	if !exists {
-		return configureFileWriter()
-	}
-
-	filePath, ok := filePathValue.(string)
-	if !ok {
-		return configureFileWriter()
-	}
-
-	return configureFileWriter(filePath)
-}
-
-func configureFileWriter(filePathParams ...string) io.Writer {
-	filePath := logFile
-
-	if len(filePathParams) > 0 {
-		filePath = filePathParams[0]
-	}
+func configureFile(fileConfig *fileWriteConfig) io.Writer {
+	logDir := filepath.Dir(fileConfig.Path)
 
 	_, dirErr := os.Stat(logDir)
 	if os.IsNotExist(dirErr) {
-		dirErr := os.Mkdir(logDir, fs.ModeDir)
+		dirErr := os.MkdirAll(logDir, fs.ModeDir)
 		if dirErr != nil {
 			panic(dirErr)
 		}
@@ -102,13 +82,29 @@ func configureFileWriter(filePathParams ...string) io.Writer {
 
 	var file *os.File
 
-	_, statErr := os.Stat(filePath)
+	_, statErr := os.Stat(fileConfig.Path)
 	if os.IsNotExist(statErr) {
-		file = shared.Unwrap(os.Create(filePath))
+		file = shared.Unwrap(os.Create(fileConfig.Path))
 	} else {
 		// TODO: Split file on each N-bytes
-		file = shared.Unwrap(os.OpenFile(filePath, os.O_APPEND, os.ModePerm))
+		file = shared.Unwrap(os.OpenFile(fileConfig.Path, os.O_APPEND, os.ModePerm))
 	}
 
 	return file
+}
+
+func parseFileConfig(fileConfigValue interface{}) *fileWriteConfig {
+	cfg := &fileWriteConfig{Path: defaultFilePath}
+
+	fileConfig, ok := fileConfigValue.(map[string]interface{})
+	if !ok {
+		return cfg
+	}
+
+	filePath, ok := fileConfig["path"].(string)
+	if ok {
+		cfg.Path = filePath
+	}
+
+	return cfg
 }
