@@ -66,6 +66,32 @@ func configureConsole(params interface{}) io.Writer {
 }
 
 func configureFile(params interface{}) io.Writer {
+	fileConfig, ok := params.(map[string]interface{})
+
+	if !ok {
+		return configureFileWriter()
+	}
+
+	filePathValue, exists := fileConfig["path"]
+	if !exists {
+		return configureFileWriter()
+	}
+
+	filePath, ok := filePathValue.(string)
+	if !ok {
+		return configureFileWriter()
+	}
+
+	return configureFileWriter(filePath)
+}
+
+func configureFileWriter(filePathParams ...string) io.Writer {
+	filePath := logFile
+
+	if len(filePathParams) > 0 {
+		filePath = filePathParams[0]
+	}
+
 	_, dirErr := os.Stat(logDir)
 	if os.IsNotExist(dirErr) {
 		dirErr := os.Mkdir(logDir, fs.ModeDir)
@@ -76,12 +102,12 @@ func configureFile(params interface{}) io.Writer {
 
 	var file *os.File
 
-	_, statErr := os.Stat(logFile)
+	_, statErr := os.Stat(filePath)
 	if os.IsNotExist(statErr) {
-		file = shared.Unwrap(os.Create(logFile))
+		file = shared.Unwrap(os.Create(filePath))
 	} else {
 		// TODO: Split file on each N-bytes
-		file = shared.Unwrap(os.OpenFile(logFile, os.O_APPEND, os.ModePerm))
+		file = shared.Unwrap(os.OpenFile(filePath, os.O_APPEND, os.ModePerm))
 	}
 
 	return file
