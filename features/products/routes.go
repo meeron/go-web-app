@@ -70,7 +70,7 @@ func get(ctx *gin.Context) {
 	})
 }
 
-func delete(ctx *gin.Context) {
+func remove(ctx *gin.Context) {
 	id := shared.Unwrap(strconv.Atoi(ctx.Param("id")))
 
 	db := database.DbCtx()
@@ -90,6 +90,6 @@ func ConfigureRoutes(app *gin.Engine) {
 		g.GET("", getAll)
 		g.POST("", add)
 		g.GET(":id", get)
-		g.DELETE(":id", delete)
+		g.DELETE(":id", remove)
 	}
 }
