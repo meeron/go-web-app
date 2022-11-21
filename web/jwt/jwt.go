@@ -3,11 +3,12 @@ package jwt
 import (
 	"fmt"
 	"github.com/golang-jwt/jwt"
+	"os"
 	"time"
 	"web-app/shared"
 )
 
-var signingKey = []byte("THIS_IS_SECRET")
+var signingKey = []byte(os.Getenv("GO_WEB_APP_JWT_SIGNING_KEY"))
 
 func Create(customClaims map[string]string) string {
 	token := jwt.New(jwt.SigningMethodHS512)
