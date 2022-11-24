@@ -9,15 +9,22 @@ import (
 	"web-app/web"
 )
 
+// Get all products
+// @Summary Get all products
+// @Schemes
+// @Tags Products
+// @Produce json
+// @Success 200 {array} products.Product
+// @Router /products [get]
 func getAll(ctx *gin.Context) {
 	db := database.DbCtx()
 
 	products := db.Products().Find()
 
-	result := make([]ProductVm, 0)
+	result := make([]Product, 0)
 
 	for _, p := range products {
-		result = append(result, ProductVm{
+		result = append(result, Product{
 			Id:    p.ID,
 			Name:  p.Name,
 			Price: p.Price,
@@ -27,11 +34,16 @@ func getAll(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
+// @Summary Add product
+// @Schemes
+// @Tags Products
+// @Produce json
+// @Accept json
+// @Param request body products.NewProduct true "New product"
+// @Success 201 {object} products.Product
+// @Router /products [post]
 func add(ctx *gin.Context) {
-	var body struct {
-		Name  string
-		Price float32
-	}
+	var body NewProduct
 
 	shared.PanicOnErr(ctx.BindJSON(&body))
 
@@ -44,13 +56,21 @@ func add(ctx *gin.Context) {
 
 	db.Products().Add(&newEntity)
 
-	ctx.JSON(http.StatusCreated, ProductVm{
+	ctx.JSON(http.StatusCreated, Product{
 		Id:    newEntity.ID,
 		Name:  newEntity.Name,
 		Price: newEntity.Price,
 	})
 }
 
+// @Summary Get product
+// @Schemes
+// @Tags Products
+// @Produce json
+// @Param id path int true "Product's id"
+// @Success 200 {object} products.Product
+// @Failure 422 {object} web.Error
+// @Router /products/{id} [get]
 func get(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	shared.PanicOnErr(err)
@@ -59,17 +79,25 @@ func get(ctx *gin.Context) {
 
 	product := db.Products().GetById(id)
 	if product == nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errorCode": "NotFound"})
+		ctx.JSON(http.StatusUnprocessableEntity, web.NotFound())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, ProductVm{
+	ctx.JSON(http.StatusOK, Product{
 		Id:    product.ID,
 		Name:  product.Name,
 		Price: product.Price,
 	})
 }
 
+// @Summary Delete product
+// @Schemes
+// @Tags Products
+// @Produce json
+// @Param id path int true "Product's id"
+// @Success 200 {object} products.Product
+// @Failure 422 {object} web.Error
+// @Router /products/{id} [delete]
 func remove(ctx *gin.Context) {
 	id := shared.Unwrap(strconv.Atoi(ctx.Param("id")))
 
@@ -77,7 +105,7 @@ func remove(ctx *gin.Context) {
 
 	result := db.Products().Remove(id)
 	if !result {
-		ctx.JSON(422, gin.H{"errorCode": "NotFound"})
+		ctx.JSON(422, web.NotFound())
 		return
 	}
 

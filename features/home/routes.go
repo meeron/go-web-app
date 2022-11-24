@@ -12,6 +12,15 @@ func index(ctx *gin.Context) {
 	})
 }
 
+// Test go performance
+// @Summary Tests go performance
+// @Schemes
+// @Description Do test
+// @Tags Home
+// @Produce json
+// @Success 200
+// @Param count path int true "Number of iteration"
+// @Router /test/{count} [get]
 func test(ctx *gin.Context) {
 	cnt, err := strconv.Atoi(ctx.Param("count"))
 	shared.PanicOnErr(err)

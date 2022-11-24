@@ -1,0 +1,195 @@
+definitions:
+  products.NewProduct:
+    properties:
+      name:
+        example: Apple
+        type: string
+      price:
+        example: 9.99
+        type: number
+    type: object
+  products.Product:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+  users.Login:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  users.NewUser:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  users.Token:
+    properties:
+      access_token:
+        type: string
+    type: object
+  users.User:
+    properties:
+      id:
+        type: integer
+    type: object
+  web.Error:
+    properties:
+      errorCode:
+        example: NotFound
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.Login'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.Token'
+        "401":
+          description: Unauthorized
+      summary: Authenticate user
+      tags:
+      - Users
+  /products:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/products.Product'
+            type: array
+      summary: Get all products
+      tags:
+      - Products
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: New product
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/products.NewProduct'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/products.Product'
+      summary: Add product
+      tags:
+      - Products
+  /products/{id}:
+    delete:
+      parameters:
+      - description: Product's id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/products.Product'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/web.Error'
+      summary: Delete product
+      tags:
+      - Products
+    get:
+      parameters:
+      - description: Product's id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/products.Product'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/web.Error'
+      summary: Get product
+      tags:
+      - Products
+  /test/{count}:
+    get:
+      description: Do test
+      parameters:
+      - description: Number of iteration
+        in: path
+        name: count
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Tests go performance
+      tags:
+      - Home
+  /users:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: New user data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.NewUser'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/users.User'
+        "422":
+          description: Exists
+          schema:
+            $ref: '#/definitions/web.Error'
+      summary: Create user
+      tags:
+      - Users
+swagger: "2.0"

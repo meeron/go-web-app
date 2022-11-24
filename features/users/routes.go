@@ -11,6 +11,15 @@ import (
 	"web-app/web/jwt"
 )
 
+// @Summary Authenticate user
+// @Schemes
+// @Tags Users
+// @Produce json
+// @Accept json
+// @Param request body users.Login true "Login credentials"
+// @Success 200 {object} users.Token
+// @Failure 401
+// @Router /login [post]
 func login(ctx *gin.Context) {
 	var body struct {
 		Email    string
@@ -50,11 +59,20 @@ func login(ctx *gin.Context) {
 		"email": user.Email,
 	})
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"access_token": accessToken,
+	ctx.JSON(http.StatusOK, Token{
+		AccessToken: accessToken,
 	})
 }
 
+// @Summary Create user
+// @Schemes
+// @Tags Users
+// @Produce json
+// @Accept json
+// @Param request body users.NewUser true "New user data"
+// @Success 201 {object} users.User
+// @Failure 422 {object} web.Error "Exists"
+// @Router /users [post]
 func create(ctx *gin.Context) {
 	var body struct {
 		Email    string
@@ -66,7 +84,7 @@ func create(ctx *gin.Context) {
 	db := database.DbCtx()
 
 	if exists := db.Users().Exists(body.Email); exists {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errorCode": "Exists"})
+		ctx.JSON(http.StatusUnprocessableEntity, web.Exists())
 		return
 	}
 
@@ -81,7 +99,9 @@ func create(ctx *gin.Context) {
 
 	db.Users().Add(&newUser)
 
-	ctx.JSON(http.StatusCreated, gin.H{"Id": newUser.ID})
+	ctx.JSON(http.StatusCreated, User{
+		Id: int(newUser.ID),
+	})
 }
 
 func ConfigureRoutes(app *gin.Engine) {
