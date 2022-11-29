@@ -2,9 +2,11 @@ package database
 
 import (
 	"fmt"
+	"web-app/shared"
+
+	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"web-app/shared"
 )
 
 var dbCtx *DbContext
@@ -81,4 +83,25 @@ func MigrateDb(connectionString string) error {
 	}
 
 	return err
+}
+
+func OpenMock() (sqlmock.Sqlmock, error) {
+	mockDb, mock, err := sqlmock.New()
+	if err != nil {
+		return nil, err
+	}
+
+	dialector := postgres.New(postgres.Config{
+		DSN:                  "mock_db",
+		DriverName:           "postgres",
+		Conn:                 mockDb,
+		PreferSimpleProtocol: true,
+	})
+
+	db := shared.Unwrap(gorm.Open(dialector, &gorm.Config{}))
+	dbCtx = &DbContext{
+		db: db,
+	}
+
+	return mock, nil
 }
