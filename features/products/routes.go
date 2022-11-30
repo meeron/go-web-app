@@ -1,12 +1,13 @@
 package products
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"web-app/database"
 	"web-app/shared"
 	"web-app/web"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Get all products
