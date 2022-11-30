@@ -28,13 +28,15 @@ func TestGetProductById(t *testing.T) {
 
 	t.Run("should response with 422 when no product found", func(t *testing.T) {
 		// Arrange
+		const id uint = 123
+
 		dbMock.ExpectQuery(regexp.QuoteMeta(getByIdQuery)).
-			WithArgs(123).
+			WithArgs(id).
 			WillReturnRows(sqlmock.NewRows(nil))
 		resErr := web.Error{}
 
 		// Act
-		req, _ := http.NewRequest("GET", "/123", nil)
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/%d", id), nil)
 		res := httptest.NewRecorder()
 		r.ServeHTTP(res, req)
 		json.Unmarshal(res.Body.Bytes(), &resErr)
@@ -69,6 +71,18 @@ func TestGetProductById(t *testing.T) {
 		assert.Equal(t, id, product.Id)
 		assert.Equal(t, name, product.Name)
 		assert.Equal(t, price, product.Price)
+	})
+
+	t.Run("should response with 404 if id is not int", func(t *testing.T) {
+		// Arrange
+		req, _ := http.NewRequest("GET", "/abc", nil)
+		res := httptest.NewRecorder()
+
+		// Act
+		r.ServeHTTP(res, req)
+
+		// Assert
+		assert.Equal(t, 404, res.Code)
 	})
 }
 

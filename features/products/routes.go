@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strconv"
 	"web-app/database"
-	"web-app/shared"
 	"web-app/web"
 
 	"github.com/gin-gonic/gin"
@@ -46,7 +45,11 @@ func getAll(ctx *gin.Context) {
 func add(ctx *gin.Context) {
 	var body NewProduct
 
-	shared.PanicOnErr(ctx.BindJSON(&body))
+	bindErr := ctx.BindJSON(&body)
+	if bindErr != nil {
+		ctx.JSON(http.StatusBadRequest, web.BadRequest("Request body should be in JSON format"))
+		return
+	}
 
 	db := database.DbCtx()
 
@@ -74,7 +77,10 @@ func add(ctx *gin.Context) {
 // @Router /products/{id} [get]
 func get(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
-	shared.PanicOnErr(err)
+	if err != nil {
+		ctx.Status(http.StatusNotFound)
+		return
+	}
 
 	db := database.DbCtx()
 
@@ -100,7 +106,11 @@ func get(ctx *gin.Context) {
 // @Failure 422 {object} web.Error
 // @Router /products/{id} [delete]
 func remove(ctx *gin.Context) {
-	id := shared.Unwrap(strconv.Atoi(ctx.Param("id")))
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.Status(http.StatusNotFound)
+		return
+	}
 
 	db := database.DbCtx()
 
