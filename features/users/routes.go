@@ -3,12 +3,13 @@ package users
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"web-app/database"
 	"web-app/shared"
 	"web-app/web"
 	"web-app/web/jwt"
+
+	"github.com/gin-gonic/gin"
 )
 
 // @Summary Authenticate user
@@ -21,18 +22,19 @@ import (
 // @Failure 401
 // @Router /login [post]
 func login(ctx *gin.Context) {
-	var body struct {
-		Email    string
-		Password string
-	}
+	var body Login
 
-	shared.PanicOnErr(ctx.BindJSON(&body))
+	bindErr := ctx.ShouldBindJSON(&body)
+	if bindErr != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, web.BadRequest(bindErr))
+		return
+	}
 
 	db := database.DbCtx()
 
 	user := db.Users().GetByEmail(body.Email)
 	if user == nil {
-		ctx.Status(http.StatusUnauthorized)
+		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
@@ -43,13 +45,13 @@ func login(ctx *gin.Context) {
 	hashedPass := fmt.Sprintf("%x", hash.Sum(nil))
 
 	if len(hashedPass) != len(user.Password) {
-		ctx.Status(http.StatusUnauthorized)
+		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
 	for i := 0; i < len(hashedPass); i++ {
 		if hashedPass[i] != user.Password[i] {
-			ctx.Status(http.StatusUnauthorized)
+			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 	}

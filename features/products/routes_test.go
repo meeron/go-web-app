@@ -14,7 +14,6 @@ import (
 	"web-app/web"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,9 +24,10 @@ const (
 )
 
 func TestGetProductById(t *testing.T) {
-	dbMock, _ := database.OpenMock()
+	dbMock, db, _ := database.OpenMock()
+	defer db.Close()
 
-	r := SetUpRouter()
+	r := tests.SetUpRouter()
 	r.GET("/:id", get)
 
 	t.Run("should response with 422 when no product found", func(t *testing.T) {
@@ -91,9 +91,10 @@ func TestGetProductById(t *testing.T) {
 }
 
 func TestGetAllProducts(t *testing.T) {
-	dbMock, _ := database.OpenMock()
+	dbMock, db, _ := database.OpenMock()
+	defer db.Close()
 
-	r := SetUpRouter()
+	r := tests.SetUpRouter()
 	r.GET("/", getAll)
 
 	t.Run("should return empty list when there is no products", func(t *testing.T) {
@@ -146,9 +147,10 @@ func TestGetAllProducts(t *testing.T) {
 }
 
 func TestAddProduct(t *testing.T) {
-	dbMock, _ := database.OpenMock()
+	dbMock, db, _ := database.OpenMock()
+	defer db.Close()
 
-	r := SetUpRouter()
+	r := tests.SetUpRouter()
 	r.POST("/", add)
 
 	t.Run("should response with 400 when body is invalid", func(t *testing.T) {
@@ -276,12 +278,6 @@ func TestAddProduct(t *testing.T) {
 		assert.Equal(t, name, product.Name)
 		assert.Equal(t, price, product.Price)
 	})
-}
-
-func SetUpRouter() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.New()
-	return router
 }
 
 func createRows() *sqlmock.Rows {

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"web-app/shared"
 
@@ -85,10 +86,10 @@ func MigrateDb(connectionString string) error {
 	return err
 }
 
-func OpenMock() (sqlmock.Sqlmock, error) {
+func OpenMock() (sqlmock.Sqlmock, *sql.DB, error) {
 	mockDb, mock, err := sqlmock.New()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	dialector := postgres.New(postgres.Config{
@@ -103,5 +104,5 @@ func OpenMock() (sqlmock.Sqlmock, error) {
 		db: db,
 	}
 
-	return mock, nil
+	return mock, mockDb, nil
 }
