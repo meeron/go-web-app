@@ -61,7 +61,7 @@ func add(ctx *gin.Context) {
 	addErr := db.Products().Add(&newEntity)
 	if addErr != nil {
 		// TODO: Log error
-		ctx.Status(http.StatusInternalServerError)
+		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
@@ -83,7 +83,7 @@ func add(ctx *gin.Context) {
 func get(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		ctx.Status(http.StatusNotFound)
+		ctx.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
@@ -91,7 +91,7 @@ func get(ctx *gin.Context) {
 
 	product := db.Products().GetById(id)
 	if product == nil {
-		ctx.JSON(http.StatusUnprocessableEntity, web.NotFound())
+		ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, web.NotFound())
 		return
 	}
 
@@ -113,7 +113,7 @@ func get(ctx *gin.Context) {
 func remove(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		ctx.Status(http.StatusNotFound)
+		ctx.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
@@ -121,7 +121,7 @@ func remove(ctx *gin.Context) {
 
 	result := db.Products().Remove(id)
 	if !result {
-		ctx.JSON(422, web.NotFound())
+		ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, web.NotFound())
 		return
 	}
 
