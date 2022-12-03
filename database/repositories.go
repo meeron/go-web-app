@@ -2,13 +2,14 @@ package database
 
 import (
 	"errors"
-	"gorm.io/gorm"
 	"web-app/shared"
+
+	"gorm.io/gorm"
 )
 
 type IProductsRepository interface {
 	Find() []Product
-	Add(new *Product)
+	Add(new *Product) error
 	GetById(id int) *Product
 	Remove(id int) bool
 }
@@ -17,8 +18,8 @@ type gormProductsRepository struct {
 	db *gorm.DB
 }
 
-func (repo gormProductsRepository) Add(new *Product) {
-	shared.PanicOnErr(repo.db.Create(new).Error)
+func (repo gormProductsRepository) Add(new *Product) error {
+	return repo.db.Create(new).Error
 }
 
 func (repo gormProductsRepository) GetById(id int) *Product {

@@ -2,12 +2,15 @@ package products
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 	"web-app/database"
+	"web-app/tests"
 	"web-app/web"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -18,6 +21,7 @@ import (
 const (
 	getByIdQuery = `SELECT * FROM "products" WHERE "products"."id" = $1 AND "products"."deleted_at" IS NULL ORDER BY "products"."id" LIMIT 1`
 	getAllQuery  = `SELECT * FROM "products" WHERE "products"."deleted_at" IS NULL`
+	insertQuery  = `INSERT INTO "products" ("created_at","updated_at","deleted_at","name","price") VALUES ($1,$2,$3,$4,$5) RETURNING "id"`
 )
 
 func TestGetProductById(t *testing.T) {
@@ -139,6 +143,84 @@ func TestGetAllProducts(t *testing.T) {
 		assert.Len(t, products, 2)
 		assert.EqualValues(t, products, result)
 	})
+}
+
+func TestAddProduct(t *testing.T) {
+	dbMock, _ := database.OpenMock()
+
+	r := SetUpRouter()
+	r.POST("/", add)
+
+	t.Run("should response with 400 when body is invalid", func(t *testing.T) {
+		// Arrange
+		req, _ := http.NewRequest("POST", "/", nil)
+		res := httptest.NewRecorder()
+		resErr := web.Error{}
+
+		//Act
+		r.ServeHTTP(res, req)
+		json.Unmarshal(res.Body.Bytes(), &resErr)
+
+		// Assert
+		assert.Equal(t, http.StatusBadRequest, res.Code)
+		assert.Equal(t, "BadRequest", resErr.ErrorCode)
+		assert.Equal(t, "Request body should be in JSON format", resErr.Message)
+	})
+
+	t.Run("should response with 500 when there add err", func(t *testing.T) {
+		// Arrange
+		body := strings.NewReader("{}")
+		req, _ := http.NewRequest("POST", "/", body)
+		res := httptest.NewRecorder()
+		resErr := web.Error{}
+
+		dbMock.ExpectBegin()
+		dbMock.ExpectQuery(regexp.QuoteMeta(insertQuery)).
+			WithArgs(tests.AnyTime{}, tests.AnyTime{}, nil, "", 0.0).
+			WillReturnError(errors.New("not inserted"))
+		dbMock.ExpectRollback()
+
+		//Act
+		r.ServeHTTP(res, req)
+		json.Unmarshal(res.Body.Bytes(), &resErr)
+
+		// Assert
+		assert.Equal(t, http.StatusInternalServerError, res.Code)
+	})
+
+	/*
+		t.Run("should response with 201 when product is created", func(t *testing.T) {
+			// Arrange
+			const name = "new product"
+			const price float32 = 9.99
+
+			newProduct := NewProduct{
+				Name:  "new_product",
+				Price: price,
+			}
+
+			jsonBytes, _ := json.Marshal(newProduct)
+			body := bytes.NewReader(jsonBytes)
+
+			req, _ := http.NewRequest("POST", "/", body)
+			res := httptest.NewRecorder()
+			product := Product{}
+
+			// dbMock.ExpectBegin()
+			// dbMock.ExpectQuery("test")
+			// dbMock.ExpectCommit()
+			dbMock.ExpectExec("INSERT INTO products")
+
+			//Act
+			r.ServeHTTP(res, req)
+			json.Unmarshal(res.Body.Bytes(), &product)
+
+			// Assert
+			assert.Equal(t, http.StatusCreated, res.Code)
+			assert.Equal(t, name, product.Name)
+			assert.Equal(t, price, product.Price)
+		})
+	*/
 }
 
 func SetUpRouter() *gin.Engine {

@@ -58,7 +58,12 @@ func add(ctx *gin.Context) {
 		Price: body.Price,
 	}
 
-	db.Products().Add(&newEntity)
+	addErr := db.Products().Add(&newEntity)
+	if addErr != nil {
+		// TODO: Log error
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
 
 	ctx.JSON(http.StatusCreated, Product{
 		Id:    newEntity.ID,
