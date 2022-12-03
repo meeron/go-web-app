@@ -39,6 +39,8 @@ func BadRequest(err error) Error {
 		switch tag {
 		case "required":
 			return fmt.Sprintf("'%s' is required", fieldName)
+		case "gt":
+			return fmt.Sprintf("'%s' must be greater than %s", fieldName, ve[0].Param())
 		}
 		return "Unknown error"
 	}(ve[0].Tag())

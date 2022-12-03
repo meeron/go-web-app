@@ -188,10 +188,34 @@ func TestAddProduct(t *testing.T) {
 		assert.Equal(t, "'Name' is required", resErr.Message)
 	})
 
+	t.Run("should response with 400 when price is zero", func(t *testing.T) {
+		// Arrange
+		newProduct := NewProduct{
+			Name: "some name",
+		}
+
+		jsonBytes, _ := json.Marshal(newProduct)
+		body := bytes.NewReader(jsonBytes)
+
+		req, _ := http.NewRequest("POST", "/", body)
+		res := httptest.NewRecorder()
+		resErr := web.Error{}
+
+		//Act
+		r.ServeHTTP(res, req)
+		json.Unmarshal(res.Body.Bytes(), &resErr)
+
+		// Assert
+		assert.Equal(t, http.StatusBadRequest, res.Code)
+		assert.Equal(t, "BadRequest", resErr.ErrorCode)
+		assert.Equal(t, "'Price' must be greater than 0", resErr.Message)
+	})
+
 	t.Run("should response with 500 when there add err", func(t *testing.T) {
 		// Arrange
 		newProduct := NewProduct{
-			Name: "test",
+			Name:  "test",
+			Price: 1,
 		}
 
 		jsonBytes, _ := json.Marshal(newProduct)
@@ -203,7 +227,7 @@ func TestAddProduct(t *testing.T) {
 
 		dbMock.ExpectBegin()
 		dbMock.ExpectQuery(regexp.QuoteMeta(insertQuery)).
-			WithArgs(tests.AnyTime{}, tests.AnyTime{}, nil, "test", 0.0).
+			WithArgs(tests.AnyTime{}, tests.AnyTime{}, nil, "test", 1.0).
 			WillReturnError(errors.New("not inserted"))
 		dbMock.ExpectRollback()
 
