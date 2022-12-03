@@ -1,6 +1,7 @@
 package products
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -188,39 +189,43 @@ func TestAddProduct(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, res.Code)
 	})
 
-	/*
-		t.Run("should response with 201 when product is created", func(t *testing.T) {
-			// Arrange
-			const name = "new product"
-			const price float32 = 9.99
+	t.Run("should response with 201 when product is created", func(t *testing.T) {
+		// Arrange
+		const name = "new product"
+		const price float32 = 9.99
+		const id uint = 666
 
-			newProduct := NewProduct{
-				Name:  "new_product",
-				Price: price,
-			}
+		newProduct := NewProduct{
+			Name:  name,
+			Price: price,
+		}
 
-			jsonBytes, _ := json.Marshal(newProduct)
-			body := bytes.NewReader(jsonBytes)
+		jsonBytes, _ := json.Marshal(newProduct)
+		body := bytes.NewReader(jsonBytes)
 
-			req, _ := http.NewRequest("POST", "/", body)
-			res := httptest.NewRecorder()
-			product := Product{}
+		req, _ := http.NewRequest("POST", "/", body)
+		res := httptest.NewRecorder()
+		product := Product{}
 
-			// dbMock.ExpectBegin()
-			// dbMock.ExpectQuery("test")
-			// dbMock.ExpectCommit()
-			dbMock.ExpectExec("INSERT INTO products")
+		rows := sqlmock.NewRows([]string{"id"}).
+			AddRow(id)
 
-			//Act
-			r.ServeHTTP(res, req)
-			json.Unmarshal(res.Body.Bytes(), &product)
+		dbMock.ExpectBegin()
+		dbMock.ExpectQuery(regexp.QuoteMeta(insertQuery)).
+			WithArgs(tests.AnyTime{}, tests.AnyTime{}, nil, name, price).
+			WillReturnRows(rows)
+		dbMock.ExpectCommit()
 
-			// Assert
-			assert.Equal(t, http.StatusCreated, res.Code)
-			assert.Equal(t, name, product.Name)
-			assert.Equal(t, price, product.Price)
-		})
-	*/
+		//Act
+		r.ServeHTTP(res, req)
+		json.Unmarshal(res.Body.Bytes(), &product)
+
+		// Assert
+		assert.Equal(t, http.StatusCreated, res.Code)
+		assert.Equal(t, id, product.Id)
+		assert.Equal(t, name, product.Name)
+		assert.Equal(t, price, product.Price)
+	})
 }
 
 func SetUpRouter() *gin.Engine {
