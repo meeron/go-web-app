@@ -45,9 +45,9 @@ func getAll(ctx *gin.Context) {
 func add(ctx *gin.Context) {
 	var body NewProduct
 
-	bindErr := ctx.BindJSON(&body)
+	bindErr := ctx.ShouldBindJSON(&body)
 	if bindErr != nil {
-		ctx.JSON(http.StatusBadRequest, web.BadRequest("Request body should be in JSON format"))
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, web.BadRequest(bindErr))
 		return
 	}
 

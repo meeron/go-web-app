@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
-	"strings"
 	"testing"
 	"web-app/database"
 	"web-app/tests"
@@ -165,19 +164,46 @@ func TestAddProduct(t *testing.T) {
 		// Assert
 		assert.Equal(t, http.StatusBadRequest, res.Code)
 		assert.Equal(t, "BadRequest", resErr.ErrorCode)
-		assert.Equal(t, "Request body should be in JSON format", resErr.Message)
+		assert.Equal(t, "invalid request", resErr.Message)
+	})
+
+	t.Run("should response with 400 when name is empty", func(t *testing.T) {
+		// Arrange
+		newProduct := NewProduct{}
+
+		jsonBytes, _ := json.Marshal(newProduct)
+		body := bytes.NewReader(jsonBytes)
+
+		req, _ := http.NewRequest("POST", "/", body)
+		res := httptest.NewRecorder()
+		resErr := web.Error{}
+
+		//Act
+		r.ServeHTTP(res, req)
+		json.Unmarshal(res.Body.Bytes(), &resErr)
+
+		// Assert
+		assert.Equal(t, http.StatusBadRequest, res.Code)
+		assert.Equal(t, "BadRequest", resErr.ErrorCode)
+		assert.Equal(t, "'Name' is required", resErr.Message)
 	})
 
 	t.Run("should response with 500 when there add err", func(t *testing.T) {
 		// Arrange
-		body := strings.NewReader("{}")
+		newProduct := NewProduct{
+			Name: "test",
+		}
+
+		jsonBytes, _ := json.Marshal(newProduct)
+		body := bytes.NewReader(jsonBytes)
+
 		req, _ := http.NewRequest("POST", "/", body)
 		res := httptest.NewRecorder()
 		resErr := web.Error{}
 
 		dbMock.ExpectBegin()
 		dbMock.ExpectQuery(regexp.QuoteMeta(insertQuery)).
-			WithArgs(tests.AnyTime{}, tests.AnyTime{}, nil, "", 0.0).
+			WithArgs(tests.AnyTime{}, tests.AnyTime{}, nil, "test", 0.0).
 			WillReturnError(errors.New("not inserted"))
 		dbMock.ExpectRollback()
 
