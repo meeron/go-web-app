@@ -1,12 +1,7 @@
 package products
 
 import (
-	"net/http"
-	"strconv"
 	"web-app/database"
-	"web-app/web"
-
-	"github.com/gin-gonic/gin"
 )
 
 // Get all products
@@ -16,7 +11,7 @@ import (
 // @Produce json
 // @Success 200 {array} products.Product
 // @Router /products [get]
-func getAll(ctx *gin.Context) {
+func getAll() {
 	db := database.DbCtx()
 
 	products := db.Products().Find()
@@ -31,7 +26,7 @@ func getAll(ctx *gin.Context) {
 		})
 	}
 
-	ctx.JSON(http.StatusOK, result)
+	//ctx.JSON(http.StatusOK, result)
 }
 
 // @Summary Add product
@@ -42,34 +37,36 @@ func getAll(ctx *gin.Context) {
 // @Param request body products.NewProduct true "New product"
 // @Success 201 {object} products.Product
 // @Router /products [post]
-func add(ctx *gin.Context) {
-	var body NewProduct
+func add() {
+	/*
+		var body NewProduct
 
-	bindErr := ctx.ShouldBindJSON(&body)
-	if bindErr != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, web.BadRequest(bindErr))
-		return
-	}
+		bindErr := ctx.ShouldBindJSON(&body)
+		if bindErr != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, web.BadRequest(bindErr))
+			return
+		}
 
-	db := database.DbCtx()
+		db := database.DbCtx()
 
-	newEntity := database.Product{
-		Name:  body.Name,
-		Price: body.Price,
-	}
+		newEntity := database.Product{
+			Name:  body.Name,
+			Price: body.Price,
+		}
 
-	addErr := db.Products().Add(&newEntity)
-	if addErr != nil {
-		// TODO: Log error
-		ctx.AbortWithStatus(http.StatusInternalServerError)
-		return
-	}
+		addErr := db.Products().Add(&newEntity)
+		if addErr != nil {
+			// TODO: Log error
+			ctx.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
 
-	ctx.JSON(http.StatusCreated, Product{
-		Id:    newEntity.ID,
-		Name:  newEntity.Name,
-		Price: newEntity.Price,
-	})
+		ctx.JSON(http.StatusCreated, Product{
+			Id:    newEntity.ID,
+			Name:  newEntity.Name,
+			Price: newEntity.Price,
+		})
+	*/
 }
 
 // @Summary Get product
@@ -80,26 +77,28 @@ func add(ctx *gin.Context) {
 // @Success 200 {object} products.Product
 // @Failure 422 {object} web.Error
 // @Router /products/{id} [get]
-func get(ctx *gin.Context) {
-	id, err := strconv.Atoi(ctx.Param("id"))
-	if err != nil {
-		ctx.AbortWithStatus(http.StatusNotFound)
-		return
-	}
+func get() {
+	/*
+		id, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil {
+			ctx.AbortWithStatus(http.StatusNotFound)
+			return
+		}
 
-	db := database.DbCtx()
+		db := database.DbCtx()
 
-	product := db.Products().GetById(id)
-	if product == nil {
-		ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, web.NotFound())
-		return
-	}
+		product := db.Products().GetById(id)
+		if product == nil {
+			ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, web.NotFound())
+			return
+		}
 
-	ctx.JSON(http.StatusOK, Product{
-		Id:    product.ID,
-		Name:  product.Name,
-		Price: product.Price,
-	})
+		ctx.JSON(http.StatusOK, Product{
+			Id:    product.ID,
+			Name:  product.Name,
+			Price: product.Price,
+		})
+	*/
 }
 
 // @Summary Delete product
@@ -110,30 +109,33 @@ func get(ctx *gin.Context) {
 // @Success 200 {object} products.Product
 // @Failure 422 {object} web.Error
 // @Router /products/{id} [delete]
-func remove(ctx *gin.Context) {
-	id, err := strconv.Atoi(ctx.Param("id"))
-	if err != nil {
-		ctx.AbortWithStatus(http.StatusNotFound)
-		return
-	}
+func remove() {
+	/*
+		id, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil {
+			ctx.AbortWithStatus(http.StatusNotFound)
+			return
+		}
 
-	db := database.DbCtx()
+		db := database.DbCtx()
 
-	result := db.Products().Remove(id)
-	if !result {
-		ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, web.NotFound())
-		return
-	}
+		result := db.Products().Remove(id)
+		if !result {
+			ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, web.NotFound())
+			return
+		}
 
-	ctx.Status(http.StatusOK)
+		ctx.Status(http.StatusOK)
+	*/
 }
 
-func ConfigureRoutes(app *gin.Engine) {
-	g := app.Group("/products", web.Auth())
-	{
-		g.GET("", getAll)
-		g.POST("", add)
-		g.GET(":id", get)
-		g.DELETE(":id", remove)
-	}
+func ConfigureRoutes() {
+	/*
+		g := app.Group("/products", web.Auth())
+		{
+			g.GET("", getAll)
+			g.POST("", add)
+			g.GET(":id", get)
+			g.DELETE(":id", remove)
+		}*/
 }

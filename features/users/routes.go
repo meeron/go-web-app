@@ -1,17 +1,5 @@
 package users
 
-import (
-	"crypto/sha256"
-	"fmt"
-	"net/http"
-	"web-app/database"
-	"web-app/shared"
-	"web-app/web"
-	"web-app/web/jwt"
-
-	"github.com/gin-gonic/gin"
-)
-
 // @Summary Authenticate user
 // @Schemes
 // @Tags Users
@@ -21,49 +9,51 @@ import (
 // @Success 200 {object} users.Token
 // @Failure 401
 // @Router /login [post]
-func login(ctx *gin.Context) {
-	var body Login
+func login() {
+	/*
+		var body Login
 
-	bindErr := ctx.ShouldBindJSON(&body)
-	if bindErr != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, web.BadRequest(bindErr))
-		return
-	}
+		bindErr := ctx.ShouldBindJSON(&body)
+		if bindErr != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, web.BadRequest(bindErr))
+			return
+		}
 
-	db := database.DbCtx()
+		db := database.DbCtx()
 
-	user := db.Users().GetByEmail(body.Email)
-	if user == nil {
-		ctx.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	hash := sha256.New()
-	_, err := hash.Write([]byte(body.Password))
-	shared.PanicOnErr(err)
-
-	hashedPass := fmt.Sprintf("%x", hash.Sum(nil))
-
-	if len(hashedPass) != len(user.Password) {
-		ctx.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	for i := 0; i < len(hashedPass); i++ {
-		if hashedPass[i] != user.Password[i] {
+		user := db.Users().GetByEmail(body.Email)
+		if user == nil {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-	}
 
-	accessToken := jwt.Create(map[string]string{
-		"sub":   fmt.Sprintf("%d", user.ID),
-		"email": user.Email,
-	})
+		hash := sha256.New()
+		_, err := hash.Write([]byte(body.Password))
+		shared.PanicOnErr(err)
 
-	ctx.JSON(http.StatusOK, Token{
-		AccessToken: accessToken,
-	})
+		hashedPass := fmt.Sprintf("%x", hash.Sum(nil))
+
+		if len(hashedPass) != len(user.Password) {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		for i := 0; i < len(hashedPass); i++ {
+			if hashedPass[i] != user.Password[i] {
+				ctx.AbortWithStatus(http.StatusUnauthorized)
+				return
+			}
+		}
+
+		accessToken := jwt.Create(map[string]string{
+			"sub":   fmt.Sprintf("%d", user.ID),
+			"email": user.Email,
+		})
+
+		ctx.JSON(http.StatusOK, Token{
+			AccessToken: accessToken,
+		})
+	*/
 }
 
 // @Summary Create user
@@ -75,42 +65,46 @@ func login(ctx *gin.Context) {
 // @Success 201 {object} users.User
 // @Failure 422 {object} web.Error "Exists"
 // @Router /users [post]
-func create(ctx *gin.Context) {
-	var body struct {
-		Email    string
-		Password string
-	}
+func create() {
+	/*
+		var body struct {
+			Email    string
+			Password string
+		}
 
-	shared.PanicOnErr(ctx.BindJSON(&body))
+		shared.PanicOnErr(ctx.BindJSON(&body))
 
-	db := database.DbCtx()
+		db := database.DbCtx()
 
-	if exists := db.Users().Exists(body.Email); exists {
-		ctx.JSON(http.StatusUnprocessableEntity, web.Exists())
-		return
-	}
+		if exists := db.Users().Exists(body.Email); exists {
+			ctx.JSON(http.StatusUnprocessableEntity, web.Exists())
+			return
+		}
 
-	hash := sha256.New()
-	_, err := hash.Write([]byte(body.Password))
-	shared.PanicOnErr(err)
+		hash := sha256.New()
+		_, err := hash.Write([]byte(body.Password))
+		shared.PanicOnErr(err)
 
-	newUser := database.User{
-		Email:    body.Email,
-		Password: fmt.Sprintf("%x", hash.Sum(nil)),
-	}
+		newUser := database.User{
+			Email:    body.Email,
+			Password: fmt.Sprintf("%x", hash.Sum(nil)),
+		}
 
-	db.Users().Add(&newUser)
+		db.Users().Add(&newUser)
 
-	ctx.JSON(http.StatusCreated, User{
-		Id: int(newUser.ID),
-	})
+		ctx.JSON(http.StatusCreated, User{
+			Id: int(newUser.ID),
+		})
+	*/
 }
 
-func ConfigureRoutes(app *gin.Engine) {
-	app.POST("/login", login)
+func ConfigureRoutes() {
+	/*
+		app.POST("/login", login)
 
-	g := app.Group("/users", web.Auth())
-	{
-		g.POST("", create)
-	}
+		g := app.Group("/users", web.Auth())
+		{
+			g.POST("", create)
+		}
+	*/
 }
