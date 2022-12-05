@@ -1,11 +1,13 @@
 package home
 
-func index() {
-	// ctx.JSON(200, gin.H{
-	// 	"version": "1.0.1",
-	// })
+import "github.com/gofiber/fiber/v2"
+
+func index(ctx *fiber.Ctx) error {
+	return ctx.JSON(fiber.Map{
+		"version": "1.0.1",
+	})
 }
 
-func ConfigureRoutes() {
-	//app.GET("/", index)
+func ConfigureRoutes(app *fiber.App) {
+	app.Get("/", index)
 }

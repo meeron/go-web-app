@@ -4,8 +4,11 @@ import (
 	"fmt"
 	//swaggerfiles "github.com/swaggo/files"
 	"web-app/database"
+	"web-app/features"
 	"web-app/shared/config"
 	"web-app/shared/logger"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
@@ -22,7 +25,9 @@ func main() {
 	database.Open(config.GetDbConnectionString())
 	appLogger.Info("Connected")
 
-	//features.ConfigureRoutes(app)
+	app := fiber.New()
+
+	features.ConfigureRoutes(app)
 
 	address := fmt.Sprintf(":%d", config.GetAppPort())
 
@@ -31,5 +36,5 @@ func main() {
 	//docs.SwaggerInfo.BasePath = "/"
 	//app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	//app.Run(address)
+	app.Listen(address)
 }

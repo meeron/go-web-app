@@ -1,7 +1,13 @@
 package features
 
-func ConfigureRoutes() {
-	//home.ConfigureRoutes(app)
+import (
+	"web-app/features/home"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+func ConfigureRoutes(app *fiber.App) {
+	home.ConfigureRoutes(app)
 	//users.ConfigureRoutes(app)
 	//products.ConfigureRoutes(app)
 }
