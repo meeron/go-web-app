@@ -1,5 +1,15 @@
 package users
 
+import (
+	"crypto/sha256"
+	"fmt"
+	"web-app/database"
+	"web-app/shared"
+	"web-app/web/jwt"
+
+	"github.com/gofiber/fiber/v2"
+)
+
 // @Summary Authenticate user
 // @Schemes
 // @Tags Users
@@ -9,51 +19,46 @@ package users
 // @Success 200 {object} users.Token
 // @Failure 401
 // @Router /login [post]
-func login() {
-	/*
-		var body Login
+func login(ctx *fiber.Ctx) error {
 
-		bindErr := ctx.ShouldBindJSON(&body)
-		if bindErr != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, web.BadRequest(bindErr))
-			return
+	var body Login
+
+	parserErr := ctx.BodyParser(&body)
+	if parserErr != nil {
+		return ctx.SendStatus(fiber.StatusBadRequest)
+	}
+
+	db := database.DbCtx()
+
+	user := db.Users().GetByEmail(body.Email)
+	if user == nil {
+		return ctx.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	hash := sha256.New()
+	_, err := hash.Write([]byte(body.Password))
+	shared.PanicOnErr(err)
+
+	hashedPass := fmt.Sprintf("%x", hash.Sum(nil))
+
+	if len(hashedPass) != len(user.Password) {
+		return ctx.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	for i := 0; i < len(hashedPass); i++ {
+		if hashedPass[i] != user.Password[i] {
+			return ctx.SendStatus(fiber.StatusUnauthorized)
 		}
+	}
 
-		db := database.DbCtx()
+	accessToken := jwt.Create(map[string]string{
+		"sub":   fmt.Sprintf("%d", user.ID),
+		"email": user.Email,
+	})
 
-		user := db.Users().GetByEmail(body.Email)
-		if user == nil {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		hash := sha256.New()
-		_, err := hash.Write([]byte(body.Password))
-		shared.PanicOnErr(err)
-
-		hashedPass := fmt.Sprintf("%x", hash.Sum(nil))
-
-		if len(hashedPass) != len(user.Password) {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		for i := 0; i < len(hashedPass); i++ {
-			if hashedPass[i] != user.Password[i] {
-				ctx.AbortWithStatus(http.StatusUnauthorized)
-				return
-			}
-		}
-
-		accessToken := jwt.Create(map[string]string{
-			"sub":   fmt.Sprintf("%d", user.ID),
-			"email": user.Email,
-		})
-
-		ctx.JSON(http.StatusOK, Token{
-			AccessToken: accessToken,
-		})
-	*/
+	return ctx.JSON(Token{
+		AccessToken: accessToken,
+	})
 }
 
 // @Summary Create user
@@ -98,10 +103,10 @@ func create() {
 	*/
 }
 
-func ConfigureRoutes() {
-	/*
-		app.POST("/login", login)
+func ConfigureRoutes(app *fiber.App) {
+	app.Post("/login", login)
 
+	/*
 		g := app.Group("/users", web.Auth())
 		{
 			g.POST("", create)
