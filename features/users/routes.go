@@ -20,7 +20,6 @@ import (
 // @Failure 401
 // @Router /login [post]
 func login(ctx *fiber.Ctx) error {
-
 	var body Login
 
 	parserErr := ctx.BodyParser(&body)

@@ -9,6 +9,7 @@ import (
 	"web-app/shared/logger"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 func main() {
@@ -26,6 +27,7 @@ func main() {
 	appLogger.Info("Connected")
 
 	app := fiber.New()
+	app.Use(recover.New())
 
 	features.ConfigureRoutes(app)
 
