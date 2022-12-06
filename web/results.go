@@ -30,7 +30,7 @@ func BadRequest(err error) Error {
 	if !errors.As(err, &ve) {
 		return Error{
 			ErrorCode: "BadRequest",
-			Message:   err.Error(),
+			Message:   "invalid request",
 		}
 	}
 

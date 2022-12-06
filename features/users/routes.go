@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"web-app/database"
 	"web-app/shared"
+	"web-app/web"
 	"web-app/web/jwt"
 
 	"github.com/gofiber/fiber/v2"
@@ -24,7 +25,8 @@ func login(ctx *fiber.Ctx) error {
 
 	parserErr := ctx.BodyParser(&body)
 	if parserErr != nil {
-		return ctx.SendStatus(fiber.StatusBadRequest)
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(web.BadRequest(parserErr))
 	}
 
 	db := database.DbCtx()
