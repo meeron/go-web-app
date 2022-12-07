@@ -71,7 +71,18 @@ func login(ctx *fiber.Ctx) error {
 // @Success 201 {object} users.User
 // @Failure 422 {object} web.Error "Exists"
 // @Router /users [post]
-func create() {
+func create(ctx *fiber.Ctx) error {
+	body := NewUser{}
+
+	if parserErr := ctx.BodyParser(&body); parserErr != nil {
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(web.BadRequest(parserErr))
+	}
+
+	if valErr := shared.Validate(body); valErr != nil {
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(web.BadRequest(valErr))
+	}
 	/*
 		var body struct {
 			Email    string
@@ -102,15 +113,12 @@ func create() {
 			Id: int(newUser.ID),
 		})
 	*/
+
+	return ctx.JSON(fiber.Map{})
 }
 
 func ConfigureRoutes(app *fiber.App) {
 	app.Post("/login", login)
-
-	/*
-		g := app.Group("/users", web.Auth())
-		{
-			g.POST("", create)
-		}
-	*/
+	app.Group("/users", web.Auth()).
+		Post("", create)
 }

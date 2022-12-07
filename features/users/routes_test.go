@@ -99,3 +99,61 @@ func TestLogin(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 	})
 }
+
+func TestCreate(t *testing.T) {
+	app := fiber.New()
+	ConfigureRoutes(app)
+
+	t.Run("should response with 400 when request body is invalid", func(t *testing.T) {
+		// Arrange
+		body := NewUser{}
+
+		req := newCreateRequest(body)
+
+		// Act
+		res, _ := app.Test(req)
+		resErr := parseErr(res)
+
+		// Assert
+		assert.Equal(t, fiber.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, "BadRequest", resErr.ErrorCode)
+		assert.Equal(t, "'Email' is required", resErr.Message)
+	})
+
+	t.Run("should response with 400 when email invalid", func(t *testing.T) {
+		// Arrange
+		body := NewUser{
+			Email:    "invalid_email",
+			Password: "test",
+		}
+
+		req := newCreateRequest(body)
+
+		// Act
+		res, _ := app.Test(req)
+		resErr := parseErr(res)
+
+		// Assert
+		assert.Equal(t, fiber.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, "BadRequest", resErr.ErrorCode)
+		assert.Equal(t, "'Email' is invalid", resErr.Message)
+	})
+}
+
+func newCreateRequest(body NewUser) *http.Request {
+	const authHeader = "Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluIiwiZXhwIjoxNjcwNDQ5MjUxLCJzdWIiOiIxIn0.MOVrVI4mAf1I6V8mvvbhX7gGq7RwSA2gb9dThF0_c8SrkemjaW-FI4pO2nEzLIrmVXfdCjnOf6dvomRY5Ijm5A"
+	bodyJsonBytes, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/users", bytes.NewReader(bodyJsonBytes))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authHeader)
+
+	return req
+}
+
+func parseErr(res *http.Response) web.Error {
+	resErr := web.Error{}
+	json.Unmarshal(shared.Unwrap(io.ReadAll(res.Body)), &resErr)
+
+	return resErr
+}
