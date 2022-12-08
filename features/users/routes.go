@@ -83,38 +83,27 @@ func create(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).
 			JSON(web.BadRequest(valErr))
 	}
-	/*
-		var body struct {
-			Email    string
-			Password string
-		}
 
-		shared.PanicOnErr(ctx.BindJSON(&body))
+	db := database.DbCtx()
 
-		db := database.DbCtx()
+	if exists := db.Users().Exists(body.Email); exists {
+		return ctx.Status(fiber.StatusUnprocessableEntity).
+			JSON(web.Exists())
+	}
 
-		if exists := db.Users().Exists(body.Email); exists {
-			ctx.JSON(http.StatusUnprocessableEntity, web.Exists())
-			return
-		}
+	hashedPass, err := shared.Sha256(body.Password)
+	shared.PanicOnErr(err)
 
-		hash := sha256.New()
-		_, err := hash.Write([]byte(body.Password))
-		shared.PanicOnErr(err)
+	newUser := database.User{
+		Email:    body.Email,
+		Password: hashedPass,
+	}
 
-		newUser := database.User{
-			Email:    body.Email,
-			Password: fmt.Sprintf("%x", hash.Sum(nil)),
-		}
+	db.Users().Add(&newUser)
 
-		db.Users().Add(&newUser)
-
-		ctx.JSON(http.StatusCreated, User{
-			Id: int(newUser.ID),
-		})
-	*/
-
-	return ctx.JSON(fiber.Map{})
+	return ctx.JSON(User{
+		Id: int(newUser.ID),
+	})
 }
 
 func ConfigureRoutes(app *fiber.App) {

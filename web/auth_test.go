@@ -1,8 +1,10 @@
 package web
 
 import (
+	"fmt"
 	"net/http/httptest"
 	"testing"
+	"web-app/web/jwt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
@@ -78,7 +80,8 @@ func TestAuth(t *testing.T) {
 
 	t.Run("should response 200 when authorization header is valid", func(t *testing.T) {
 		// Arrange
-		const authHeader = "Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluIiwiZXhwIjoxNjcwNDQ5MjUxLCJzdWIiOiIxIn0.MOVrVI4mAf1I6V8mvvbhX7gGq7RwSA2gb9dThF0_c8SrkemjaW-FI4pO2nEzLIrmVXfdCjnOf6dvomRY5Ijm5A"
+		token := jwt.Create(make(map[string]string, 0))
+		authHeader := fmt.Sprintf("Bearer %s", token)
 
 		req := httptest.NewRequest("GET", route, nil)
 		req.Header.Set("Authorization", authHeader)

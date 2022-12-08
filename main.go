@@ -5,6 +5,7 @@ import (
 	//swaggerfiles "github.com/swaggo/files"
 	"web-app/database"
 	"web-app/features"
+	"web-app/shared"
 	"web-app/shared/config"
 	"web-app/shared/logger"
 
@@ -38,5 +39,5 @@ func main() {
 	//docs.SwaggerInfo.BasePath = "/"
 	//app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	app.Listen(address)
+	shared.PanicOnErr(app.Listen(address))
 }

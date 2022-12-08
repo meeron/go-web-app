@@ -12,7 +12,9 @@ import (
 	"testing"
 	"web-app/database"
 	"web-app/shared"
+	"web-app/tests"
 	"web-app/web"
+	"web-app/web/jwt"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gofiber/fiber/v2"
@@ -20,7 +22,9 @@ import (
 )
 
 const (
-	query = `SELECT * FROM "users" WHERE email = $1 AND "users"."deleted_at" IS NULL ORDER BY "users"."id" LIMIT 1`
+	query       = `SELECT * FROM "users" WHERE email = $1 AND "users"."deleted_at" IS NULL ORDER BY "users"."id" LIMIT 1`
+	queryExists = `SELECT count(*) FROM "users" WHERE email = $1`
+	queryInsert = `INSERT INTO "users" ("created_at","updated_at","deleted_at","email","password") VALUES ($1,$2,$3,$4,$5) RETURNING "id"`
 )
 
 func TestLogin(t *testing.T) {
@@ -101,6 +105,9 @@ func TestLogin(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
+	dbMock, db, _ := database.OpenMock()
+	defer db.Close()
+
 	app := fiber.New()
 	ConfigureRoutes(app)
 
@@ -138,10 +145,76 @@ func TestCreate(t *testing.T) {
 		assert.Equal(t, "BadRequest", resErr.ErrorCode)
 		assert.Equal(t, "'Email' is invalid", resErr.Message)
 	})
+
+	t.Run("should response with 422 when user exists", func(t *testing.T) {
+		// Arrange
+		const email = "test@test.com"
+
+		body := NewUser{
+			Email:    email,
+			Password: "test",
+		}
+
+		req := newCreateRequest(body)
+
+		rows := sqlmock.NewRows([]string{"id"}).
+			AddRow(1)
+		dbMock.ExpectQuery(regexp.QuoteMeta(queryExists)).
+			WithArgs(email).
+			WillReturnRows(rows)
+
+		// Act
+		res, _ := app.Test(req)
+		resErr := parseErr(res)
+
+		// Assert
+		assert.Equal(t, fiber.StatusUnprocessableEntity, res.StatusCode)
+		assert.Equal(t, "Exists", resErr.ErrorCode)
+	})
+
+	t.Run("should response with 200 when user has been added", func(t *testing.T) {
+		// Arrange
+		const email = "test_added@test.com"
+		const password = "test"
+		const addedId uint = 666
+
+		hashedPass, _ := shared.Sha256(password)
+
+		body := NewUser{
+			Email:    email,
+			Password: password,
+		}
+
+		req := newCreateRequest(body)
+
+		dbMock.ExpectQuery(regexp.QuoteMeta(queryExists)).
+			WithArgs(email).
+			WillReturnRows(sqlmock.NewRows(nil))
+
+		rows := sqlmock.NewRows([]string{"id"}).
+			AddRow(addedId)
+
+		dbMock.ExpectBegin()
+		dbMock.ExpectQuery(regexp.QuoteMeta(queryInsert)).
+			WithArgs(tests.AnyTime{}, tests.AnyTime{}, nil, email, hashedPass).
+			WillReturnRows(rows)
+		dbMock.ExpectCommit()
+
+		// Act
+		res, _ := app.Test(req)
+		resUser := User{}
+		json.Unmarshal(shared.Unwrap(io.ReadAll(res.Body)), &resUser)
+
+		// Assert
+		assert.Equal(t, fiber.StatusOK, res.StatusCode)
+		assert.Equal(t, int(addedId), resUser.Id)
+	})
 }
 
 func newCreateRequest(body NewUser) *http.Request {
-	const authHeader = "Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluIiwiZXhwIjoxNjcwNDQ5MjUxLCJzdWIiOiIxIn0.MOVrVI4mAf1I6V8mvvbhX7gGq7RwSA2gb9dThF0_c8SrkemjaW-FI4pO2nEzLIrmVXfdCjnOf6dvomRY5Ijm5A"
+	token := jwt.Create(make(map[string]string, 0))
+	authHeader := fmt.Sprintf("Bearer %s", token)
+
 	bodyJsonBytes, _ := json.Marshal(body)
 
 	req := httptest.NewRequest("POST", "/users", bytes.NewReader(bodyJsonBytes))
