@@ -2,6 +2,9 @@ package products
 
 import (
 	"web-app/database"
+	"web-app/web"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 // Get all products
@@ -11,7 +14,7 @@ import (
 // @Produce json
 // @Success 200 {array} products.Product
 // @Router /products [get]
-func getAll() {
+func getAll(ctx *fiber.Ctx) error {
 	db := database.DbCtx()
 
 	products := db.Products().Find()
@@ -26,7 +29,7 @@ func getAll() {
 		})
 	}
 
-	//ctx.JSON(http.StatusOK, result)
+	return ctx.JSON(products)
 }
 
 // @Summary Add product
@@ -129,13 +132,7 @@ func remove() {
 	*/
 }
 
-func ConfigureRoutes() {
-	/*
-		g := app.Group("/products", web.Auth())
-		{
-			g.GET("", getAll)
-			g.POST("", add)
-			g.GET(":id", get)
-			g.DELETE(":id", remove)
-		}*/
+func ConfigureRoutes(app *fiber.App) {
+	app.Group("/products", web.Auth()).
+		Get("/", getAll)
 }
