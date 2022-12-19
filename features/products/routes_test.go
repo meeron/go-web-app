@@ -11,6 +11,8 @@ import (
 	"testing"
 	"web-app/database"
 	"web-app/shared"
+	"web-app/tests"
+	"web-app/web"
 	"web-app/web/jwt"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -20,6 +22,7 @@ import (
 
 const (
 	querySelectAll = `SELECT * FROM "products" WHERE "products"."deleted_at" IS NULL`
+	insertQuery    = `INSERT INTO "products" ("created_at","updated_at","deleted_at","name","price") VALUES ($1,$2,$3,$4,$5) RETURNING "id"`
 )
 
 func TestGetAll(t *testing.T) {
@@ -57,6 +60,89 @@ func TestGetAll(t *testing.T) {
 	})
 }
 
+func TestAdd(t *testing.T) {
+	dbMock, db, _ := database.OpenMock()
+	defer db.Close()
+	app := fiber.New()
+	ConfigureRoutes(app)
+
+	t.Run("should response with 400 when request body is invalid", func(t *testing.T) {
+		// Arrange
+		req := newRequest("POST", "/products", nil)
+
+		// Act
+		res, _ := app.Test(req)
+		resErr := parseErr(res)
+
+		// Assert
+		assert.Equal(t, fiber.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, "BadRequest", resErr.ErrorCode)
+		assert.Equal(t, "invalid request", resErr.Message)
+	})
+
+	t.Run("should response with 400 when name is invalid", func(t *testing.T) {
+		// Arrange
+		req := newRequest("POST", "/products", NewProduct{})
+
+		// Act
+		res, _ := app.Test(req)
+		resErr := parseErr(res)
+
+		// Assert
+		assert.Equal(t, fiber.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, "BadRequest", resErr.ErrorCode)
+		assert.Equal(t, "'Name' is required", resErr.Message)
+	})
+
+	t.Run("should response with 400 when price is invalid", func(t *testing.T) {
+		// Arrange
+		req := newRequest("POST", "/products", NewProduct{Name: "test"})
+
+		// Act
+		res, _ := app.Test(req)
+		resErr := parseErr(res)
+
+		// Assert
+		assert.Equal(t, fiber.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, "BadRequest", resErr.ErrorCode)
+		assert.Equal(t, "'Price' must be greater than 0", resErr.Message)
+	})
+
+	t.Run("should response with 200 request body is valid", func(t *testing.T) {
+		// Arrange
+		const name = "test"
+		const price float32 = 6.66
+		const addedId uint = 666
+
+		body := NewProduct{Name: name, Price: price}
+
+		req := newRequest("POST", "/products", body)
+
+		rows := sqlmock.NewRows([]string{"id"}).
+			AddRow(addedId)
+
+		dbMock.ExpectBegin()
+		dbMock.ExpectQuery(regexp.QuoteMeta(insertQuery)).
+			WithArgs(
+				tests.AnyTime{},
+				tests.AnyTime{},
+				nil,
+				name,
+				price,
+			).WillReturnRows(rows)
+		dbMock.ExpectCommit()
+
+		// Act
+		res, _ := app.Test(req)
+		product := Product{}
+		json.Unmarshal(shared.Unwrap(io.ReadAll(res.Body)), &product)
+
+		// Assert
+		assert.Equal(t, fiber.StatusOK, res.StatusCode)
+		assert.Equal(t, addedId, product.Id)
+	})
+}
+
 func newRequest(method string, url string, body interface{}) *http.Request {
 	var bodyReader io.Reader = nil
 	token := jwt.Create(make(map[string]string, 0))
@@ -72,4 +158,11 @@ func newRequest(method string, url string, body interface{}) *http.Request {
 	req.Header.Set("Authorization", authHeader)
 
 	return req
+}
+
+func parseErr(res *http.Response) web.Error {
+	resErr := web.Error{}
+	json.Unmarshal(shared.Unwrap(io.ReadAll(res.Body)), &resErr)
+
+	return resErr
 }

@@ -1,7 +1,9 @@
 package products
 
 import (
+	"log"
 	"web-app/database"
+	"web-app/shared"
 	"web-app/web"
 
 	"github.com/gofiber/fiber/v2"
@@ -29,7 +31,7 @@ func getAll(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.JSON(products)
+	return ctx.JSON(result)
 }
 
 // @Summary Add product
@@ -40,36 +42,38 @@ func getAll(ctx *fiber.Ctx) error {
 // @Param request body products.NewProduct true "New product"
 // @Success 201 {object} products.Product
 // @Router /products [post]
-func add() {
-	/*
-		var body NewProduct
+func add(ctx *fiber.Ctx) error {
+	var body NewProduct
 
-		bindErr := ctx.ShouldBindJSON(&body)
-		if bindErr != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, web.BadRequest(bindErr))
-			return
-		}
+	if bindErr := ctx.BodyParser(&body); bindErr != nil {
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(web.BadRequest(bindErr))
+	}
 
-		db := database.DbCtx()
+	if valErr := shared.Validate(body); valErr != nil {
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(web.BadRequest(valErr))
+	}
 
-		newEntity := database.Product{
-			Name:  body.Name,
-			Price: body.Price,
-		}
+	db := database.DbCtx()
 
-		addErr := db.Products().Add(&newEntity)
-		if addErr != nil {
-			// TODO: Log error
-			ctx.AbortWithStatus(http.StatusInternalServerError)
-			return
-		}
+	newEntity := database.Product{
+		Name:  body.Name,
+		Price: body.Price,
+	}
 
-		ctx.JSON(http.StatusCreated, Product{
-			Id:    newEntity.ID,
-			Name:  newEntity.Name,
-			Price: newEntity.Price,
-		})
-	*/
+	addErr := db.Products().Add(&newEntity)
+	if addErr != nil {
+		log.Fatal(addErr)
+		return ctx.Status(fiber.StatusInternalServerError).
+			JSON(addErr)
+	}
+
+	return ctx.JSON(Product{
+		Id:    newEntity.ID,
+		Name:  newEntity.Name,
+		Price: newEntity.Price,
+	})
 }
 
 // @Summary Get product
@@ -133,6 +137,7 @@ func remove() {
 }
 
 func ConfigureRoutes(app *fiber.App) {
-	app.Group("/products", web.Auth()).
-		Get("/", getAll)
+	products := app.Group("/products", web.Auth())
+	products.Get("/", getAll)
+	products.Post("/", add)
 }

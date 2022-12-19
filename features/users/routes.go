@@ -108,6 +108,7 @@ func create(ctx *fiber.Ctx) error {
 
 func ConfigureRoutes(app *fiber.App) {
 	app.Post("/login", login)
-	app.Group("/users", web.Auth()).
-		Post("", create)
+
+	users := app.Group("/users", web.Auth())
+	users.Post("", create)
 }

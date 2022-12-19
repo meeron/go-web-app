@@ -7,6 +7,6 @@ type Product struct {
 }
 
 type NewProduct struct {
-	Name  string  `json:"name" example:"Apple" binding:"required"`
-	Price float32 `json:"price" example:"9.99" binding:"gt=0"`
+	Name  string  `json:"name" example:"Apple" validate:"required"`
+	Price float32 `json:"price" example:"9.99" validate:"gt=0"`
 }
