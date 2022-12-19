@@ -22,7 +22,8 @@ import (
 
 const (
 	querySelectAll = `SELECT * FROM "products" WHERE "products"."deleted_at" IS NULL`
-	insertQuery    = `INSERT INTO "products" ("created_at","updated_at","deleted_at","name","price") VALUES ($1,$2,$3,$4,$5) RETURNING "id"`
+	queryInsert    = `INSERT INTO "products" ("created_at","updated_at","deleted_at","name","price") VALUES ($1,$2,$3,$4,$5) RETURNING "id"`
+	querySelectOne = `SELECT * FROM "products" WHERE "products"."id" = $1 AND "products"."deleted_at" IS NULL ORDER BY "products"."id" LIMIT 1`
 )
 
 func TestGetAll(t *testing.T) {
@@ -122,7 +123,7 @@ func TestAdd(t *testing.T) {
 			AddRow(addedId)
 
 		dbMock.ExpectBegin()
-		dbMock.ExpectQuery(regexp.QuoteMeta(insertQuery)).
+		dbMock.ExpectQuery(regexp.QuoteMeta(queryInsert)).
 			WithArgs(
 				tests.AnyTime{},
 				tests.AnyTime{},
@@ -140,6 +141,69 @@ func TestAdd(t *testing.T) {
 		// Assert
 		assert.Equal(t, fiber.StatusOK, res.StatusCode)
 		assert.Equal(t, addedId, product.Id)
+	})
+}
+
+func TestGet(t *testing.T) {
+	dbMock, db, _ := database.OpenMock()
+	defer db.Close()
+	app := fiber.New()
+	ConfigureRoutes(app)
+
+	t.Run("should response with 404 when id param is not an int", func(t *testing.T) {
+		// Arrange
+		req := newRequest("GET", "/products/not_an_int", nil)
+
+		// Arrange
+		res, _ := app.Test(req)
+
+		// Assert
+		assert.Equal(t, fiber.StatusNotFound, res.StatusCode)
+	})
+
+	t.Run("should response with 422 and NotFound error code when product is not found", func(t *testing.T) {
+		// Arrange
+		const id uint = 99
+		req := newRequest("GET", fmt.Sprintf("/products/%d", id), nil)
+
+		dbMock.ExpectQuery(regexp.QuoteMeta(querySelectOne)).
+			WithArgs(id).
+			WillReturnRows(sqlmock.NewRows(nil))
+
+		// Arrange
+		res, _ := app.Test(req)
+		resErr := parseErr(res)
+
+		// Assert
+		assert.Equal(t, fiber.StatusUnprocessableEntity, res.StatusCode)
+		assert.Equal(t, "NotFound", resErr.ErrorCode)
+	})
+
+	t.Run("should response with 200 and product if product has been found", func(t *testing.T) {
+		// Arrange
+		const id uint = 666
+		const name = "test"
+		const price float32 = 9.99
+
+		req := newRequest("GET", fmt.Sprintf("/products/%d", id), nil)
+
+		rows := sqlmock.NewRows([]string{"id", "name", "price"}).
+			AddRow(id, name, price)
+
+		dbMock.ExpectQuery(regexp.QuoteMeta(querySelectOne)).
+			WithArgs(id).
+			WillReturnRows(rows)
+
+		// Arrange
+		res, _ := app.Test(req)
+		product := Product{}
+		json.Unmarshal(shared.Unwrap(io.ReadAll(res.Body)), &product)
+
+		// Assert
+		assert.Equal(t, fiber.StatusOK, res.StatusCode)
+		assert.Equal(t, id, product.Id)
+		assert.Equal(t, name, product.Name)
+		assert.Equal(t, price, product.Price)
 	})
 }
 

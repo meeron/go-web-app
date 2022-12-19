@@ -84,28 +84,26 @@ func add(ctx *fiber.Ctx) error {
 // @Success 200 {object} products.Product
 // @Failure 422 {object} web.Error
 // @Router /products/{id} [get]
-func get() {
-	/*
-		id, err := strconv.Atoi(ctx.Param("id"))
-		if err != nil {
-			ctx.AbortWithStatus(http.StatusNotFound)
-			return
-		}
+func get(ctx *fiber.Ctx) error {
 
-		db := database.DbCtx()
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		return ctx.SendStatus(fiber.StatusNotFound)
+	}
 
-		product := db.Products().GetById(id)
-		if product == nil {
-			ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, web.NotFound())
-			return
-		}
+	db := database.DbCtx()
 
-		ctx.JSON(http.StatusOK, Product{
-			Id:    product.ID,
-			Name:  product.Name,
-			Price: product.Price,
-		})
-	*/
+	product := db.Products().GetById(id)
+	if product == nil {
+		return ctx.Status(fiber.StatusUnprocessableEntity).
+			JSON(web.NotFound())
+	}
+
+	return ctx.JSON(Product{
+		Id:    product.ID,
+		Name:  product.Name,
+		Price: product.Price,
+	})
 }
 
 // @Summary Delete product
@@ -140,4 +138,5 @@ func ConfigureRoutes(app *fiber.App) {
 	products := app.Group("/products", web.Auth())
 	products.Get("/", getAll)
 	products.Post("/", add)
+	products.Get("/:id", get)
 }
