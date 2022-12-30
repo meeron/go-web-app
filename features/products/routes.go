@@ -1,12 +1,12 @@
 package products
 
 import (
-	"net/http"
-	"strconv"
+	"log"
 	"web-app/database"
+	"web-app/shared"
 	"web-app/web"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // Get all products
@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Success 200 {array} products.Product
 // @Router /products [get]
-func getAll(ctx *gin.Context) {
+func getAll(ctx *fiber.Ctx) error {
 	db := database.DbCtx()
 
 	products := db.Products().Find()
@@ -31,7 +31,7 @@ func getAll(ctx *gin.Context) {
 		})
 	}
 
-	ctx.JSON(http.StatusOK, result)
+	return ctx.JSON(result)
 }
 
 // @Summary Add product
@@ -42,13 +42,17 @@ func getAll(ctx *gin.Context) {
 // @Param request body products.NewProduct true "New product"
 // @Success 201 {object} products.Product
 // @Router /products [post]
-func add(ctx *gin.Context) {
+func add(ctx *fiber.Ctx) error {
 	var body NewProduct
 
-	bindErr := ctx.ShouldBindJSON(&body)
-	if bindErr != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, web.BadRequest(bindErr))
-		return
+	if bindErr := ctx.BodyParser(&body); bindErr != nil {
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(web.BadRequest(bindErr))
+	}
+
+	if valErr := shared.Validate(body); valErr != nil {
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(web.BadRequest(valErr))
 	}
 
 	db := database.DbCtx()
@@ -60,12 +64,12 @@ func add(ctx *gin.Context) {
 
 	addErr := db.Products().Add(&newEntity)
 	if addErr != nil {
-		// TODO: Log error
-		ctx.AbortWithStatus(http.StatusInternalServerError)
-		return
+		log.Fatal(addErr)
+		return ctx.Status(fiber.StatusInternalServerError).
+			JSON(addErr)
 	}
 
-	ctx.JSON(http.StatusCreated, Product{
+	return ctx.JSON(Product{
 		Id:    newEntity.ID,
 		Name:  newEntity.Name,
 		Price: newEntity.Price,
@@ -80,22 +84,22 @@ func add(ctx *gin.Context) {
 // @Success 200 {object} products.Product
 // @Failure 422 {object} web.Error
 // @Router /products/{id} [get]
-func get(ctx *gin.Context) {
-	id, err := strconv.Atoi(ctx.Param("id"))
+func get(ctx *fiber.Ctx) error {
+
+	id, err := ctx.ParamsInt("id")
 	if err != nil {
-		ctx.AbortWithStatus(http.StatusNotFound)
-		return
+		return ctx.SendStatus(fiber.StatusNotFound)
 	}
 
 	db := database.DbCtx()
 
 	product := db.Products().GetById(id)
 	if product == nil {
-		ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, web.NotFound())
-		return
+		return ctx.Status(fiber.StatusUnprocessableEntity).
+			JSON(web.NotFound())
 	}
 
-	ctx.JSON(http.StatusOK, Product{
+	return ctx.JSON(Product{
 		Id:    product.ID,
 		Name:  product.Name,
 		Price: product.Price,
@@ -110,30 +114,27 @@ func get(ctx *gin.Context) {
 // @Success 200 {object} products.Product
 // @Failure 422 {object} web.Error
 // @Router /products/{id} [delete]
-func remove(ctx *gin.Context) {
-	id, err := strconv.Atoi(ctx.Param("id"))
+func remove(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
 	if err != nil {
-		ctx.AbortWithStatus(http.StatusNotFound)
-		return
+		return ctx.SendStatus(fiber.StatusNotFound)
 	}
 
 	db := database.DbCtx()
 
-	result := db.Products().Remove(id)
-	if !result {
-		ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, web.NotFound())
-		return
+	err = db.Products().Remove(id)
+	if err != nil {
+		log.Fatal(err)
+		return ctx.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	ctx.Status(http.StatusOK)
+	return ctx.SendStatus(fiber.StatusOK)
 }
 
-func ConfigureRoutes(app *gin.Engine) {
-	g := app.Group("/products", web.Auth())
-	{
-		g.GET("", getAll)
-		g.POST("", add)
-		g.GET(":id", get)
-		g.DELETE(":id", remove)
-	}
+func ConfigureRoutes(app *fiber.App) {
+	products := app.Group("/products", web.Auth())
+	products.Get("/", getAll)
+	products.Post("/", add)
+	products.Get("/:id", get)
+	products.Delete("/:id", remove)
 }

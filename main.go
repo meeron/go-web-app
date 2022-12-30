@@ -2,20 +2,20 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	swaggerfiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	//swaggerfiles "github.com/swaggo/files"
 	"web-app/database"
-	docs "web-app/docs"
 	"web-app/features"
+	"web-app/shared"
 	"web-app/shared/config"
 	"web-app/shared/logger"
-	"web-app/web"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 func main() {
 	config.Init()
-	loggerWriter := logger.Init()
+	logger.Init()
 
 	appLogger := logger.Create("App")
 
@@ -27,16 +27,8 @@ func main() {
 	database.Open(config.GetDbConnectionString())
 	appLogger.Info("Connected")
 
-	if config.IsEnv(config.EnvProd) {
-		gin.DisableConsoleColor()
-	}
-
-	gin.DefaultWriter = loggerWriter
-
-	gin.SetMode(config.GetGinMode())
-
-	app := gin.New()
-	app.Use(gin.Logger(), web.CustomRecovery())
+	app := fiber.New()
+	app.Use(recover.New())
 
 	features.ConfigureRoutes(app)
 
@@ -44,8 +36,8 @@ func main() {
 
 	appLogger.Info("Listening on %v...", address)
 
-	docs.SwaggerInfo.BasePath = "/"
-	app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	//docs.SwaggerInfo.BasePath = "/"
+	//app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	app.Run(address)
+	shared.PanicOnErr(app.Listen(address))
 }

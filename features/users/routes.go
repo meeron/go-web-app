@@ -3,13 +3,12 @@ package users
 import (
 	"crypto/sha256"
 	"fmt"
-	"net/http"
 	"web-app/database"
 	"web-app/shared"
 	"web-app/web"
 	"web-app/web/jwt"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // @Summary Authenticate user
@@ -21,21 +20,20 @@ import (
 // @Success 200 {object} users.Token
 // @Failure 401
 // @Router /login [post]
-func login(ctx *gin.Context) {
+func login(ctx *fiber.Ctx) error {
 	var body Login
 
-	bindErr := ctx.ShouldBindJSON(&body)
-	if bindErr != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, web.BadRequest(bindErr))
-		return
+	parserErr := ctx.BodyParser(&body)
+	if parserErr != nil {
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(web.BadRequest(parserErr))
 	}
 
 	db := database.DbCtx()
 
 	user := db.Users().GetByEmail(body.Email)
 	if user == nil {
-		ctx.AbortWithStatus(http.StatusUnauthorized)
-		return
+		return ctx.SendStatus(fiber.StatusUnauthorized)
 	}
 
 	hash := sha256.New()
@@ -45,14 +43,12 @@ func login(ctx *gin.Context) {
 	hashedPass := fmt.Sprintf("%x", hash.Sum(nil))
 
 	if len(hashedPass) != len(user.Password) {
-		ctx.AbortWithStatus(http.StatusUnauthorized)
-		return
+		return ctx.SendStatus(fiber.StatusUnauthorized)
 	}
 
 	for i := 0; i < len(hashedPass); i++ {
 		if hashedPass[i] != user.Password[i] {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
+			return ctx.SendStatus(fiber.StatusUnauthorized)
 		}
 	}
 
@@ -61,7 +57,7 @@ func login(ctx *gin.Context) {
 		"email": user.Email,
 	})
 
-	ctx.JSON(http.StatusOK, Token{
+	return ctx.JSON(Token{
 		AccessToken: accessToken,
 	})
 }
@@ -75,42 +71,44 @@ func login(ctx *gin.Context) {
 // @Success 201 {object} users.User
 // @Failure 422 {object} web.Error "Exists"
 // @Router /users [post]
-func create(ctx *gin.Context) {
-	var body struct {
-		Email    string
-		Password string
+func create(ctx *fiber.Ctx) error {
+	body := NewUser{}
+
+	if parserErr := ctx.BodyParser(&body); parserErr != nil {
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(web.BadRequest(parserErr))
 	}
 
-	shared.PanicOnErr(ctx.BindJSON(&body))
+	if valErr := shared.Validate(body); valErr != nil {
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(web.BadRequest(valErr))
+	}
 
 	db := database.DbCtx()
 
 	if exists := db.Users().Exists(body.Email); exists {
-		ctx.JSON(http.StatusUnprocessableEntity, web.Exists())
-		return
+		return ctx.Status(fiber.StatusUnprocessableEntity).
+			JSON(web.Exists())
 	}
 
-	hash := sha256.New()
-	_, err := hash.Write([]byte(body.Password))
+	hashedPass, err := shared.Sha256(body.Password)
 	shared.PanicOnErr(err)
 
 	newUser := database.User{
 		Email:    body.Email,
-		Password: fmt.Sprintf("%x", hash.Sum(nil)),
+		Password: hashedPass,
 	}
 
 	db.Users().Add(&newUser)
 
-	ctx.JSON(http.StatusCreated, User{
+	return ctx.JSON(User{
 		Id: int(newUser.ID),
 	})
 }
 
-func ConfigureRoutes(app *gin.Engine) {
-	app.POST("/login", login)
+func ConfigureRoutes(app *fiber.App) {
+	app.Post("/login", login)
 
-	g := app.Group("/users", web.Auth())
-	{
-		g.POST("", create)
-	}
+	users := app.Group("/users", web.Auth())
+	users.Post("", create)
 }

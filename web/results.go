@@ -30,7 +30,7 @@ func BadRequest(err error) Error {
 	if !errors.As(err, &ve) {
 		return Error{
 			ErrorCode: "BadRequest",
-			Message:   err.Error(),
+			Message:   "invalid request",
 		}
 	}
 
@@ -41,6 +41,8 @@ func BadRequest(err error) Error {
 			return fmt.Sprintf("'%s' is required", fieldName)
 		case "gt":
 			return fmt.Sprintf("'%s' must be greater than %s", fieldName, ve[0].Param())
+		case "email":
+			return fmt.Sprintf("'%s' is invalid", fieldName)
 		}
 		return "Unknown error"
 	}(ve[0].Tag())
