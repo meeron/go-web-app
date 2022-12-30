@@ -1,0 +1,23 @@
+@authHeader = Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluIiwiZXhwIjoxNjcyNDA3NzE0LCJzdWIiOiIxIn0.Jr2CQOj9238gxlaAvtA3j7k3LkpLE06RNfCn-_00DSTtAbGG9tjWjMEbtorOTsoQxJcfEmK7Q-LZWm6wIxePCA
+
+### Get all products
+GET {{baseUrl}}/products
+Authorization: {{authHeader}}
+
+### Get single product
+GET {{baseUrl}}/products/1
+Authorization: {{authHeader}}
+
+### Add product
+POST {{baseUrl}}/products
+Authorization: {{authHeader}}
+Content-Type: application/json
+
+{
+    "name": "test",
+    "price": 9.99
+}
+
+### Remove product
+DELETE {{baseUrl}}/products/7
+Authorization: {{authHeader}}

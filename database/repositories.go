@@ -11,7 +11,7 @@ type IProductsRepository interface {
 	Find() []Product
 	Add(new *Product) error
 	GetById(id int) *Product
-	Remove(id int) bool
+	Remove(id int) error
 }
 
 type gormProductsRepository struct {
@@ -43,11 +43,10 @@ func (repo gormProductsRepository) Find() []Product {
 	return products
 }
 
-func (repo gormProductsRepository) Remove(id int) bool {
+func (repo gormProductsRepository) Remove(id int) error {
 	var product Product
 
 	result := repo.db.Delete(&product, id)
-	shared.PanicOnErr(result.Error)
 
-	return result.RowsAffected > 0
+	return result.Error
 }

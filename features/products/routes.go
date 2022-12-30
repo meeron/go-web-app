@@ -114,24 +114,21 @@ func get(ctx *fiber.Ctx) error {
 // @Success 200 {object} products.Product
 // @Failure 422 {object} web.Error
 // @Router /products/{id} [delete]
-func remove() {
-	/*
-		id, err := strconv.Atoi(ctx.Param("id"))
-		if err != nil {
-			ctx.AbortWithStatus(http.StatusNotFound)
-			return
-		}
+func remove(ctx *fiber.Ctx) error {
+	id, err := ctx.ParamsInt("id")
+	if err != nil {
+		return ctx.SendStatus(fiber.StatusNotFound)
+	}
 
-		db := database.DbCtx()
+	db := database.DbCtx()
 
-		result := db.Products().Remove(id)
-		if !result {
-			ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, web.NotFound())
-			return
-		}
+	err = db.Products().Remove(id)
+	if err != nil {
+		log.Fatal(err)
+		return ctx.SendStatus(fiber.StatusInternalServerError)
+	}
 
-		ctx.Status(http.StatusOK)
-	*/
+	return ctx.SendStatus(fiber.StatusOK)
 }
 
 func ConfigureRoutes(app *fiber.App) {
@@ -139,4 +136,5 @@ func ConfigureRoutes(app *fiber.App) {
 	products.Get("/", getAll)
 	products.Post("/", add)
 	products.Get("/:id", get)
+	products.Delete("/:id", remove)
 }
